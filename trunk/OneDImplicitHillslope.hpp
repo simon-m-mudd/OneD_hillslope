@@ -28,15 +28,34 @@ class OneDImplicitHillslope
 							double tU_hat_width, Array1D<double> tzeta_hat, Array1D<double> tzeta_last_timestep,
 							Array1D<double> tzeta_intermediate, Array1D<double> tf, Array2D<double> tCoeff_matrix,
 							vector<double> tx_hat,vector<double> tA_hat_denom, vector<double> tB_hat_denom,
-							vector<double> tA_slope_denom2, vector<double> tB_slope_denom2)
+							vector<double> tA_slope_denom2, vector<double> tB_slope_denom2, 
+              double tD, double tS_c, double tL_H, vector<double> tx, 
+              vector<double> tzeta_dimen,vector<double> tzeta_lts_dimen, double trho_ratio)
 								{ create(tn_nodes, tridgetop_node,tt_hat_peak, tU_hat_peak,tU_hat_width,
 								tzeta_hat,tzeta_last_timestep,tzeta_intermediate, tf, tCoeff_matrix,
-								tx_hat, tA_hat_denom, tB_hat_denom, tA_slope_denom2,tB_slope_denom2); }
+								tx_hat, tA_hat_denom, tB_hat_denom, tA_slope_denom2,tB_slope_denom2, 
+                tD, tS_c, tL_H, tx, tzeta_dimen, tzeta_lts_dimen, trho_ratio); }
 
+    // set the dimensional parameters
+    void set_D(double new_D)  { D = new_D; }
+    void set_S_c(double new_S_c) {S_c = new_S_c; }
+    void set_L_H(double new_L_H);
+    void set_rho_ratio(double new_rho_ratio) {rho_ratio = new_rho_ratio; }
+
+    // check if the dimensional parameters have been set
+    bool check_if_dimensional_parameters_set();
+    
     // some tools for moving between dimensional and nondimensional space
-    double dimensional_timestep(double dt_hat, double L_H, double D); 
-    double dimensional_uplift(double U_hat, double L_H, double D,double S_c, double rho_ratio);
-    double nondimensionalise_U(double U, double L_H, double D, double S_c, double rho_ratio);
+    double dimensional_time_from_that(double dt_hat); 
+    double dimensional_uplift_from_Uhat(double U_hat);
+    vector<double> dimensional_zeta_from_zeta_hat();
+    double U_hat_from_dimensional_U(double U);
+       
+    // this runs a hillslope timestep in dimensional and wraps it in dimensional
+    // space
+    double run_dimensional_hillslope_timestep(double& dt_hat, double& t_hat_ime,
+                                   double & t_ime, double uplift, double tolerance);
+
 
 		// reset hillslope to a new flat surface using the same spatial discritization
 		void reset_hillslope(double tp_temp, double Up_temp, double Uw_temp);
@@ -48,18 +67,22 @@ class OneDImplicitHillslope
 		                                            double target_time, double tolerance);
 													// this advnaces the model to some
 													// set time
-		void hillslope_timestep(double& dt_hat, double& t_ime, double U_hat,double tolerance);
+		
+    void hillslope_timestep(double& dt_hat, double& t_ime, double U_hat,double tolerance);
 													// this does a single timestep in the
 													// evolution of the hillslope
 													// returns a new timestep and the new t_ime
-		void hillslope_timestep_gaussian_uplift(double& dt_hat, double& t_ime, double tolerance);
+		
+    void hillslope_timestep_gaussian_uplift(double& dt_hat, double& t_ime, double tolerance);
 													// this does a single timestep but solves the
 													// governing equations using U_hat at
 													// the future timestep determined from a
 													// gaussian function
-		int hillslope_iterator(double dt_hat, double U_hat, double tolerance);
+		
+    int hillslope_iterator(double dt_hat, double U_hat, double tolerance);
 													// this adjusts the timestep
-		void solve_for_zeta_intermediate(double dt_hat, double U_hat);
+		
+    void solve_for_zeta_intermediate(double dt_hat, double U_hat);
 													// this solves a timestep, replacing the
 													// data array zeta_intermediate with
 													// a solved zeta
@@ -73,6 +96,7 @@ class OneDImplicitHillslope
 		double get_t_hat_peak() const				{return t_hat_peak;}
 		double get_U_hat_peak() const				{return U_hat_peak;}
 		double get_U_hat_width() const				{return U_hat_width;}
+		double get_rho_ratio() const      { return rho_ratio; }
 
 		Array1D<double> get_zeta_hat() const		{ Array1D<double> yo = zeta_hat.copy();
 											  		return yo; }
@@ -91,6 +115,12 @@ class OneDImplicitHillslope
 		vector<double> get_B_hat_denom() const		{ return B_hat_denom; }
 		vector<double> get_A_slope_denom2() const	{ return A_slope_denom2; }
 		vector<double> get_B_slope_denom2() const	{ return B_slope_denom2; }
+		double get_D() const  { return D; }
+    double get_S_c() const { return S_c; }
+    double get_L_H() const { return L_H; }
+    vector<double> get_x() const { return x; }
+    vector<double> get_zeta_dimen() const { return zeta_dimen; }
+    vector<double> get_zeta_lts_dimen() const { return zeta_lts_dimen; }
 
 		// functions for getting the anayltical solutions to the governing equations
 		// these are used to test the numerical method
@@ -134,7 +164,17 @@ class OneDImplicitHillslope
 
 	protected:
 
-		int n_nodes;				// number of nodes
+		int n_nodes;				    // number of nodes
+		
+		// data members for dimensional version
+		double D;                       // diffusivity m^2/yr
+		double S_c;                     // critical slope
+		double L_H;                     // hillslope lenght (m)
+		double rho_ratio;               // ratio between rock and soil density
+		vector<double> x;               // distance from divide
+		vector<double> zeta_dimen;      // dimensional elevation
+		vector<double> zeta_lts_dimen;  // dimensional elevation from the last timestep
+		
 		int ridgetop_node;			// the node number of the ridgetop
 		double t_hat_peak;			// time of peak uplift
 		double U_hat_peak;			// maximum uplift
@@ -168,7 +208,9 @@ class OneDImplicitHillslope
 					double tU_hat_width, Array1D<double> zeta_hat, Array1D<double> tzeta_last_timestep,
 					Array1D<double> tzeta_intermediate, Array1D<double> tf, Array2D<double> tCoeff_matrix,
 					vector<double> tx_hat,vector<double> tA_hat_denom, vector<double> tB_hat_denom,
-					vector<double> tA_slope_denom2, vector<double> tB_slope_denom2);
+					vector<double> tA_slope_denom2, vector<double> tB_slope_denom2, 
+          double tD, double tS_c, double tL_H, vector<double> tx, 
+          vector<double> tzeta_dimen,vector<double> tzeta_lts_dimen, double rho_ratio);
 };
 
 #endif

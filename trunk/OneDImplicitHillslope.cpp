@@ -1,9 +1,8 @@
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-// oneD_implicit_nonlinear_hillslope.cpp
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 //
 // an object for solving nonlinear hillslope evolution implicitly
 //
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 #include <iostream>
 #include <fstream>
@@ -28,7 +27,8 @@ OneDImplicitHillslope& OneDImplicitHillslope::operator=(const OneDImplicitHillsl
     create(get_n_nodes(),get_ridgetop_nod() ,get_t_hat_peak(),get_U_hat_peak(),
     	   get_U_hat_width(),get_zeta_hat(),get_zeta_last_timestep(),get_zeta_intermediate(),
     	   get_f(),get_Coeff_matrix(),get_x_hat(),get_A_hat_denom(),get_B_hat_denom(),
-    	   get_A_slope_denom2(),get_B_slope_denom2());
+    	   get_A_slope_denom2(),get_B_slope_denom2(),get_D(), get_S_c(), get_L_H(), 
+         get_x(), get_zeta_dimen(),get_zeta_lts_dimen(), get_rho_ratio());
    }
   return *this;
  }
@@ -44,9 +44,9 @@ void OneDImplicitHillslope::create()
 	create(tp_temp,Up_temp,Uw_temp, dx);
 }
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function initializes the hillslope
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void OneDImplicitHillslope::create(double tp_temp,double Up_temp,double Uw_temp)
 {
 	t_hat_peak = tp_temp;
@@ -134,11 +134,11 @@ void OneDImplicitHillslope::create(double tp_temp,double Up_temp,double Uw_temp)
 	Coeff_matrix = Temp_coeff_matx.copy();
 	f = temp_f.copy();
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function initializes the hillslope
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void OneDImplicitHillslope::create(double tp_temp,double Up_temp,double Uw_temp, double dx)
 {
 	t_hat_peak = tp_temp;
@@ -227,14 +227,16 @@ void OneDImplicitHillslope::create(double tp_temp,double Up_temp,double Uw_temp,
 	Coeff_matrix = Temp_coeff_matx.copy();
 	f = temp_f.copy();
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 // this copy constructor is for use with the = operator
 void OneDImplicitHillslope::create(int tn_nodes, int tridgetop_node, double tt_hat_peak, double tU_hat_peak,
 					double tU_hat_width, Array1D<double> tzeta_hat, Array1D<double> tzeta_last_timestep,
 					Array1D<double> tzeta_intermediate, Array1D<double> tf, Array2D<double> tCoeff_matrix,
 					vector<double> tx_hat,vector<double> tA_hat_denom, vector<double> tB_hat_denom,
-					vector<double> tA_slope_denom2, vector<double> tB_slope_denom2)
+					vector<double> tA_slope_denom2, vector<double> tB_slope_denom2,
+          double tD, double tS_c, double tL_H, vector<double> tx, 
+          vector<double> tzeta_dimen,vector<double> tzeta_lts_dimen, double trho_ratio)
 {
 	n_nodes = n_nodes;
 	ridgetop_node = tridgetop_node;
@@ -251,7 +253,87 @@ void OneDImplicitHillslope::create(int tn_nodes, int tridgetop_node, double tt_h
 	B_hat_denom = tB_hat_denom;
 	A_slope_denom2  = tA_slope_denom2;
 	B_slope_denom2 = tB_slope_denom2;
+	D = tD;
+	S_c = tS_c;
+	x = tx;
+	zeta_dimen = tzeta_dimen;
+	zeta_lts_dimen = tzeta_lts_dimen;
+	rho_ratio = trho_ratio;
 }
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This sets the new length of the hillslope and also updates the x vector
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void OneDImplicitHillslope::set_L_H(double new_L_H)
+{
+  L_H = new_L_H;
+  
+  vector<double> temp_x(n_nodes);
+  // now update x
+  for(int i = 0; i<n_nodes; i++)
+  {
+    temp_x[i] = x_hat[i]*L_H;
+  }
+  x = temp_x;  
+}
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This checks to make sure that the parameters are set to something reasonable
+// for running a dimensional simulation
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+bool OneDImplicitHillslope::check_if_dimensional_parameters_set( void )
+{
+  bool is_it_set = true;
+  
+  if (D < 1e-10 || D>1)
+  {
+    is_it_set = false;
+  }
+  
+  if (S_c < 0.3 || S_c > 2)
+  {
+    is_it_set = false;
+  }
+
+  // if the rho ratio is less than 1 something is wrong since this is
+  // rho_r/rho_s. 
+  if (rho_ratio < 1)
+  {
+    if (rho_ratio != 0)
+    {
+      rho_ratio = 1/rho_ratio;
+    }
+  }  
+  
+  if (rho_ratio > 4 )
+  {
+    is_it_set = false;
+  }
+  
+  if (L_H < 1 || L_H > 5000)
+  {
+    is_it_set = false;
+  }
+
+  // make sure the vectors are the correct size  
+  if (is_it_set)
+  {
+    if (int(zeta_dimen.size()) != n_nodes)
+    {
+      vector<double> rightsize_vec(n_nodes,0.0);
+      zeta_dimen = rightsize_vec;
+      zeta_lts_dimen = rightsize_vec;
+    }
+    if (int(x.size()) != n_nodes)
+    {
+      set_L_H(L_H);
+    }
+  }
+  
+  return is_it_set;
+}
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 //
@@ -266,12 +348,21 @@ void OneDImplicitHillslope::create(int tn_nodes, int tridgetop_node, double tt_h
 // Time is scaled with:  t = (L_H^2/D) * t_hat
 //
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-double OneDImplicitHillslope::dimensional_timestep(double dt_hat, double L_H, double D)
+double OneDImplicitHillslope::dimensional_time_from_that(double dt_hat)
 {
   double dimensional_dt;
   
-  dimensional_dt = dt_hat*L_H*L_H/D;
-  return dimensional_dt;
+  if (check_if_dimensional_parameters_set())
+  {  
+    dimensional_dt = dt_hat*L_H*L_H/D;
+    return dimensional_dt;
+  }
+  else
+  {
+    cout << "Dimensional parameters not set, returning 0 for timestep" << endl;
+    return 0;
+  } 
+    
 }
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -284,22 +375,53 @@ double OneDImplicitHillslope::dimensional_timestep(double dt_hat, double L_H, do
 // Uplift is scaled with U = ((D*S_c)/(2*(rho_r/rho_s)*L_H))*U_hat
 // rho_ratio =  rho_r/rho_s
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-double OneDImplicitHillslope::dimensional_uplift(double U_hat, double L_H, double D, 
-                                 double S_c, double rho_ratio)
+double OneDImplicitHillslope::dimensional_uplift_from_Uhat(double U_hat)
 {
   double dimensional_U;
   
-  if (rho_ratio < 1)
-  {
-    cout << "Warning, rho_ratio is < 1" << endl;
-    cout << "rho_ratio is rho_r/rho_s: are you sure you have the right parameter values?" << endl;
+  if (check_if_dimensional_parameters_set())
+  {  
+    dimensional_U = (D*S_c*U_hat)/(2*rho_ratio*L_H);
+    return dimensional_U;
   }
+  else
+  {
+    cout << "Dimensional parameters not set, returning 0 for timestep" << endl;
+    return 0;
+  } 
     
-  dimensional_U = (D*S_c*U_hat)/(2*rho_ratio*L_H);
-  return dimensional_U;
+
 }
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+//
+// Dimensionalise an elevation vector
+//
+// elevation is scaled with: zeta = L+H*S_c*zeta_hat
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+vector<double> OneDImplicitHillslope::dimensional_zeta_from_zeta_hat()
+{
+  vector<double> updated_zeta_dimen(n_nodes,0.0);
+  
+  if (check_if_dimensional_parameters_set())
+  {  
+    for(int i = 0; i<n_nodes; i++)
+    {
+      updated_zeta_dimen[i] = zeta_hat[i]*S_c*L_H;
+    }
+  }
+  else
+  {
+    cout << "Dimensional parameters not set! Did not calculate zeta" << endl;
+  } 
+  
+  return updated_zeta_dimen;
+    
+}
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+                   
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 //
 // NonDimensionalise an upflift rate  
@@ -308,23 +430,61 @@ double OneDImplicitHillslope::dimensional_uplift(double U_hat, double L_H, doubl
 // Uplift is scaled with U = ((D*S_c)/(2*(rho_r/rho_s)*L_H))*U_hat
 // rho_ratio =  rho_r/rho_s
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-double OneDImplicitHillslope::nondimensionalise_U(double U, double L_H, double D, 
-                                    double S_c, double rho_ratio)
+double OneDImplicitHillslope::U_hat_from_dimensional_U(double U)
 {
   double U_hat;
-  
-  U_hat =  (U*2*rho_ratio*L_H)/(D*S_c);
-  return U_hat;
 
+  if (check_if_dimensional_parameters_set())
+  {  
+    U_hat =  (U*2*rho_ratio*L_H)/(D*S_c);
+    return U_hat;
+  }
+  else
+  {
+    cout << "Dimensional parameters not set, returning 0 for timestep" << endl;
+    return 0;
+  } 
 }
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This runs a timestep but updates dimensional space in the process
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+double OneDImplicitHillslope::run_dimensional_hillslope_timestep(double& dt_hat, 
+                        double& t_hat_ime, double& t_ime, double uplift, double tolerance)
+{
+  // set the old zeta
+  zeta_lts_dimen = dimensional_zeta_from_zeta_hat();
+  
+  // first get the current time in dimensionless space and convert to dimensional 
+  // time
+  double start_time = dimensional_time_from_that(t_hat_ime);
+  
+  // now calculate the dimensionless uplift
+  double this_Uhat = U_hat_from_dimensional_U( uplift);
+  
+  // now run a timestep 
+  hillslope_timestep(dt_hat, t_hat_ime, this_Uhat, tolerance);
+  
+  // now calculate the dimensional zeta
+  zeta_dimen = dimensional_zeta_from_zeta_hat();
+  
+  // the new dimensional time
+  t_ime = dimensional_time_from_that(t_hat_ime);
+  
+  // now get the timestep (this is used for erosion rate calculations)
+  double dimensional_dt = t_ime - start_time;
+  return dimensional_dt; 
+  
+}     
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this resets the 1D hillslope so that the coefficient matrices and
 // x locations don't have to be recaluclated
 // it starts from a flat surface
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void OneDImplicitHillslope::reset_hillslope(double tp_temp, double Up_temp, double Uw_temp)
 {
 	t_hat_peak = tp_temp;
@@ -336,12 +496,12 @@ void OneDImplicitHillslope::reset_hillslope(double tp_temp, double Up_temp, doub
 	zeta_intermediate = zero_vec.copy();
 	zeta_last_timestep = zero_vec.copy();
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this returns the U_star for a given t_hat based on a gaissian function
 //
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 double OneDImplicitHillslope::gaussian_uplift(double t_hat)
 {
 	double U_hat;
@@ -349,15 +509,15 @@ double OneDImplicitHillslope::gaussian_uplift(double t_hat)
 	return U_hat;
 
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function runs the model, using a gaussian uplift field, until it has reached the
 // time indicated by t_ime
 //
 // this replaces the data in the E_star_modelled and R_star_modelled vectors
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void OneDImplicitHillslope::run_based_on_data_spacing
 							(vector<double> t_hat_data, vector<double>& E_star_modelled,
 							 vector<double>& R_star_modelled, double tolerance)
@@ -381,10 +541,10 @@ void OneDImplicitHillslope::run_based_on_data_spacing
 	}
 }
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function runs the model, using a gaussian uplift field, until it has reached the
 // time indicated by t_ime
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void OneDImplicitHillslope::advance_to_next_time_interval_gaussian_uplift
 							(double& dt_hat, double& t_ime, double target_time, double tolerance)
 {
@@ -413,10 +573,10 @@ void OneDImplicitHillslope::advance_to_next_time_interval_gaussian_uplift
 }
 
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function solves a timestep of the hillslope implicitly
 // note uplift is considered to be spatially homogenous
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void OneDImplicitHillslope::hillslope_timestep(double& dt_hat, double& t_ime, double U_hat, double tolerance)
 {
 	int continue_switch = 0;
@@ -455,13 +615,14 @@ void OneDImplicitHillslope::hillslope_timestep(double& dt_hat, double& t_ime, do
 	dt_hat = dt_hat_new;
 	t_ime+= dt_hat_old;
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function solves a timestep of the hillslope implicitly
 // note uplift is considered to be spatially homogenous
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-void OneDImplicitHillslope::hillslope_timestep_gaussian_uplift(double& dt_hat, double& t_ime, double tolerance)
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void OneDImplicitHillslope::hillslope_timestep_gaussian_uplift(double& dt_hat, 
+           double& t_ime, double tolerance)
 {
 	double U_hat;
 	int continue_switch = 0;
@@ -502,15 +663,15 @@ void OneDImplicitHillslope::hillslope_timestep_gaussian_uplift(double& dt_hat, d
 	dt_hat = dt_hat_new;
 	t_ime+= dt_hat_old;
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this iterates on the solution until a tolerance has been reached.
 // there is a maximum number of iterations (5)
 // If the model fails to converge within 5 iterations the function exits without updating
 //  zeta.  A parent function can then change the timestep and try again
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 int OneDImplicitHillslope::hillslope_iterator(double dt_hat, double U_hat, double tolerance)
 {
 	// assemble the matrix using the last timestep
@@ -541,13 +702,13 @@ int OneDImplicitHillslope::hillslope_iterator(double dt_hat, double U_hat, doubl
 
 	return iterations;
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this assembles the coefficient matrix and solves for intermediate zeta
 // it replaces the intermediate zeta provided to it
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void OneDImplicitHillslope::solve_for_zeta_intermediate(double dt_hat, double U_hat)
 {
 	double A_hat, B_hat;
@@ -574,12 +735,12 @@ void OneDImplicitHillslope::solve_for_zeta_intermediate(double dt_hat, double U_
 	LU<double> sol_CM(Coeff_matrix);  // Create LU object
 	zeta_intermediate = sol_CM.solve(f);
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this gets the r_star and E* values
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 double OneDImplicitHillslope::calculate_R_star()
 {
 	double R_star = zeta_hat[ridgetop_node];
@@ -612,9 +773,9 @@ double OneDImplicitHillslope::calculate_E_star()
 }
 // note there is no analytical e* since this is just U_star
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this gets the maximum difference between the intermediate zeta and the new zeta
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 double OneDImplicitHillslope::get_zeta_rootsquare_error()
 {
 	double max_error = 0;
@@ -628,15 +789,15 @@ double OneDImplicitHillslope::get_zeta_rootsquare_error()
 
 	return sqrt(max_error);
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 //
 // get the analaytical solution of C* as a function of x* from Roering et al
 // equation 8a. Note that there must be a coordinate transformation since I have
 // boundaries at x = 0 and x = 2 and Josh has boundaries at x = -1 and 1.
 //
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Array1D<double> OneDImplicitHillslope::get_analytical_SS_Cstar(double U_star)
 {
 	Array1D<double> analytical_Cstar(n_nodes,0.0);
@@ -667,15 +828,15 @@ Array1D<double> OneDImplicitHillslope::get_analytical_SS_Cstar(double U_star)
 
 	return analytical_Cstar;
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this gets the anayltical S* according to Roering et al
 // equation 8b. Note that there must be a coordinate transformation since I have
 // boundaries at x = 0 and x = 2 and Josh has boundaries at x = -1 and 1.
 //
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Array1D<double> OneDImplicitHillslope::get_analytical_SS_Sstar(double U_star)
 {
 	Array1D<double> analytical_Sstar(n_nodes,0.0);
@@ -691,16 +852,16 @@ Array1D<double> OneDImplicitHillslope::get_analytical_SS_Sstar(double U_star)
 
 	return analytical_Sstar;
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this gets the anayltical z* according to Roering et al
 // equation 8c. Note that there must be a coordinate transformation since I have
 // boundaries at x = 0 and x = 2 and Josh has boundaries at x = -1 and 1.
 //
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Array1D<double> OneDImplicitHillslope::get_analytical_SS_zstar(double U_star)
 {
 	Array1D<double> analytical_zstar(n_nodes,0.0);
@@ -724,11 +885,11 @@ Array1D<double> OneDImplicitHillslope::get_analytical_SS_zstar(double U_star)
 
 	return analytical_zstar;
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function prints the analytical solutions to screen
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void OneDImplicitHillslope::print_analytical_SS(double U_star)
 {
 	Array1D<double> analytical_zstar = get_analytical_SS_zstar(U_star);
@@ -742,13 +903,13 @@ void OneDImplicitHillslope::print_analytical_SS(double U_star)
 		     << " \t S_hat: " << analytical_Sstar[i] << " \t C_hat: " << analytical_Cstar[i] << endl;
 	}
 }
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function is simply used to test the steady solution
 // it returns the root square of the maximum error between zeta_star modelled
 // vs zeta_star analytical
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 double OneDImplicitHillslope::test_steady(double dt_hat, double tolerance)
 {
 
