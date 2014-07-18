@@ -253,6 +253,73 @@ void OneDImplicitHillslope::create(int tn_nodes, int tridgetop_node, double tt_h
 	B_slope_denom2 = tB_slope_denom2;
 }
 
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+//
+// Dimensionalise a timestep. This can be used to keep track of dimensional
+// time if you are varying diffusivity. This is necessary since the 
+// temporal nondimensionalisation depends on D
+//
+// The timestep takes a time increment and a dimensionless time, 
+// and returns a possibly updated time increment and an updated dimensionless
+// time. It also takes a dimensionless Uplift
+//
+// Time is scaled with:  t = (L_H^2/D) * t_hat
+//
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+double OneDImplicitHillslope::dimensional_timestep(double dt_hat, double L_H, double D)
+{
+  double dimensional_dt;
+  
+  dimensional_dt = dt_hat*L_H*L_H/D;
+  return dimensional_dt;
+}
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+//
+// Dimensionalise an upflift rate  This is necessary since the 
+// temporal nondimensionalisation depends on D
+//
+// Uplift is scaled with U = ((D*S_c)/(2*(rho_r/rho_s)*L_H))*U_hat
+// rho_ratio =  rho_r/rho_s
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+double OneDImplicitHillslope::dimensional_uplift(double U_hat, double L_H, double D, 
+                                 double S_c, double rho_ratio)
+{
+  double dimensional_U;
+  
+  if (rho_ratio < 1)
+  {
+    cout << "Warning, rho_ratio is < 1" << endl;
+    cout << "rho_ratio is rho_r/rho_s: are you sure you have the right parameter values?" << endl;
+  }
+    
+  dimensional_U = (D*S_c*U_hat)/(2*rho_ratio*L_H);
+  return dimensional_U;
+}
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+//
+// NonDimensionalise an upflift rate  
+// This function is used to keep a steady uplift rate if D is changing
+//
+// Uplift is scaled with U = ((D*S_c)/(2*(rho_r/rho_s)*L_H))*U_hat
+// rho_ratio =  rho_r/rho_s
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+double OneDImplicitHillslope::nondimensionalise_U(double U, double L_H, double D, 
+                                    double S_c, double rho_ratio)
+{
+  double U_hat;
+  
+  U_hat =  (U*2*rho_ratio*L_H)/(D*S_c);
+  return U_hat;
+
+}
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 // this resets the 1D hillslope so that the coefficient matrices and
 // x locations don't have to be recaluclated
@@ -436,7 +503,6 @@ void OneDImplicitHillslope::hillslope_timestep_gaussian_uplift(double& dt_hat, d
 	t_ime+= dt_hat_old;
 }
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
 
 
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

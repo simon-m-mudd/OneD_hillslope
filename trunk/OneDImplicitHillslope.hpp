@@ -33,6 +33,11 @@ class OneDImplicitHillslope
 								tzeta_hat,tzeta_last_timestep,tzeta_intermediate, tf, tCoeff_matrix,
 								tx_hat, tA_hat_denom, tB_hat_denom, tA_slope_denom2,tB_slope_denom2); }
 
+    // some tools for moving between dimensional and nondimensional space
+    double dimensional_timestep(double dt_hat, double L_H, double D); 
+    double dimensional_uplift(double U_hat, double L_H, double D,double S_c, double rho_ratio);
+    double nondimensionalise_U(double U, double L_H, double D, double S_c, double rho_ratio);
+
 		// reset hillslope to a new flat surface using the same spatial discritization
 		void reset_hillslope(double tp_temp, double Up_temp, double Uw_temp);
 
