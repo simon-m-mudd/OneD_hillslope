@@ -132,7 +132,7 @@ int main (int nNumberofArgs,char *argv[])
   string data_outname3 =  param_name+"_data3.data";
   string data_out_fname3 = pathname+data_outname3;
   ofstream data_out3;
-  data_out1.open(data_out_fname3.c_str()); 
+  data_out3.open(data_out_fname3.c_str()); 
 
   string data_outname4 =  param_name+"_data4.data";
   string data_out_fname4 = pathname+data_outname4;
@@ -184,7 +184,7 @@ int main (int nNumberofArgs,char *argv[])
         } 
         else if (Ui == 2) 
         {
-          data_out2 << Uhat_start << "\t" << Uhat_ratio << "\t" 
+          data_out3 << Uhat_start << "\t" << Uhat_ratio << "\t" 
                     << logratio_low+double(Ufi)*dlogR << "\t"
                     << Uhat_final << "\t"
                     << step_change_data[0] << "\t" << step_change_data[1] << "\t" 
@@ -192,7 +192,7 @@ int main (int nNumberofArgs,char *argv[])
         }               
         else if (Ui == 3) 
         {
-          data_out2 << Uhat_start << "\t" << Uhat_ratio << "\t" 
+          data_out4 << Uhat_start << "\t" << Uhat_ratio << "\t" 
                     << logratio_low+double(Ufi)*dlogR << "\t"
                     << Uhat_final << "\t"
                     << step_change_data[0] << "\t" << step_change_data[1] << "\t" 
@@ -201,7 +201,10 @@ int main (int nNumberofArgs,char *argv[])
       }
     }
   }
-  data_out.close();
+  data_out1.close();
+  data_out2.close();
+  data_out3.close();
+  data_out4.close();
   
 
 
