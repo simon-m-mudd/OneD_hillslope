@@ -48,8 +48,7 @@ int main (int nNumberofArgs,char *argv[])
   string pfname = pathname+param_name+dot+param_suffix;
   cout << "Parameter filename is: " << pfname << endl;
   
-  string data_outname =  param_name+"_data.data";
-  string data_out_fname = pathname+data_outname;
+
 
   
   // open the parameter file
@@ -116,13 +115,35 @@ int main (int nNumberofArgs,char *argv[])
   double Uhat_ratio;
   double max_Uhat = 30;  
   vector<double> step_change_data;
+
+
   
-  // open the outfile
-  ofstream data_out;
-  data_out.open(data_out_fname.c_str());
-  
+  // open the outfile2
+  string data_outname1 =  param_name+"_data1.data";
+  string data_out_fname1 = pathname+data_outname1;
+  ofstream data_out1;
+  data_out1.open(data_out_fname1.c_str());
+ 
+  string data_outname2 =  param_name+"_data2.data";
+  string data_out_fname2 = pathname+data_outname2;
+  ofstream data_out2;
+  data_out2.open(data_out_fname2.c_str()); 
+
+  string data_outname3 =  param_name+"_data3.data";
+  string data_out_fname3 = pathname+data_outname3;
+  ofstream data_out3;
+  data_out1.open(data_out_fname3.c_str()); 
+
+  string data_outname4 =  param_name+"_data4.data";
+  string data_out_fname4 = pathname+data_outname4;
+  ofstream data_out4;
+  data_out4.open(data_out_fname4.c_str()); 
+
   // print header information
-  data_out << "Uhat_start\tUhat_ratio\tUhat_final\tMax_err\tEhat_at_maxerr\tThat_at_maxerr" << endl;
+  data_out1 << "Uhat_start\tUhat_ratio\tlogUhat_ratio\tUhat_final\tMax_err\tEhat_at_maxerr\tThat_at_maxerr" << endl;
+  data_out2 << "Uhat_start\tUhat_ratio\tlogUhat_ratio\tUhat_final\tMax_err\tEhat_at_maxerr\tThat_at_maxerr" << endl;
+  data_out3 << "Uhat_start\tUhat_ratio\tlogUhat_ratio\tUhat_final\tMax_err\tEhat_at_maxerr\tThat_at_maxerr" << endl;
+  data_out4 << "Uhat_start\tUhat_ratio\tlogUhat_ratio\tUhat_final\tMax_err\tEhat_at_maxerr\tThat_at_maxerr" << endl;
   
   // loop through the starting Uis
   for (int Ui = 0; Ui<N_Ustart; Ui++)
@@ -145,9 +166,38 @@ int main (int nNumberofArgs,char *argv[])
                                      Uhat_start, Uhat_final);
                                      
         // print these results to file
-        data_out << Uhat_start << "\t" << Uhat_ratio << "\t" << Uhat_final << "\t"
-                 << step_change_data[0] << "\t" << step_change_data[1] << "\t" 
-                << step_change_data[2] << endl;
+        if (Ui == 0)
+        {
+          data_out1 << Uhat_start << "\t" << Uhat_ratio << "\t" 
+                    << logratio_low+double(Ufi)*dlogR << "\t"
+                    << Uhat_final << "\t"
+                    << step_change_data[0] << "\t" << step_change_data[1] << "\t" 
+                    << step_change_data[2] << endl;
+        }
+        else if (Ui == 1)
+        {
+          data_out2 << Uhat_start << "\t" << Uhat_ratio << "\t" 
+                    << logratio_low+double(Ufi)*dlogR << "\t"
+                    << Uhat_final << "\t"
+                    << step_change_data[0] << "\t" << step_change_data[1] << "\t" 
+                    << step_change_data[2] << endl;
+        } 
+        else if (Ui == 2) 
+        {
+          data_out2 << Uhat_start << "\t" << Uhat_ratio << "\t" 
+                    << logratio_low+double(Ufi)*dlogR << "\t"
+                    << Uhat_final << "\t"
+                    << step_change_data[0] << "\t" << step_change_data[1] << "\t" 
+                    << step_change_data[2] << endl;
+        }               
+        else if (Ui == 3) 
+        {
+          data_out2 << Uhat_start << "\t" << Uhat_ratio << "\t" 
+                    << logratio_low+double(Ufi)*dlogR << "\t"
+                    << Uhat_final << "\t"
+                    << step_change_data[0] << "\t" << step_change_data[1] << "\t" 
+                    << step_change_data[2] << endl;
+        } 
       }
     }
   }
