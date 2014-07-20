@@ -103,11 +103,11 @@ int main (int nNumberofArgs,char *argv[])
   }
   cout << endl;   
 
-	// create a hillslope
-	OneDImplicitHillslope Hillslope;
+  // create a hillslope
+  OneDImplicitHillslope Hillslope;
 
-	// set the tolerance for the iterations
-	//double tolerance = 0.000001;
+  // set the tolerance for the iterations
+  //double tolerance = 0.000001;
 
   // parameters for each iteration
   double Uhat_start;
@@ -115,8 +115,6 @@ int main (int nNumberofArgs,char *argv[])
   double Uhat_ratio;
   double max_Uhat = 30;  
   vector<double> step_change_data;
-
-
   
   // open the outfile2
   string data_outname1 =  param_name+"_data1.data";

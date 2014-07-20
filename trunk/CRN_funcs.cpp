@@ -26,7 +26,7 @@ list<LSDCRNParticle> initiate_SS_cosmo_column(int start_type, double startxLoc,
 		      LSDCRNParameters& CRN_param)
 {
   // get number of particles
-  int N_particles = start_depth/particle_spacing;
+  int N_particles = double(start_depth/particle_spacing)+1;
 
   // create the list
   list<LSDCRNParticle> CRN_plist;
@@ -34,10 +34,12 @@ list<LSDCRNParticle> initiate_SS_cosmo_column(int start_type, double startxLoc,
   double this_depth;
 
   // now loop over the depths, inserting particles and setting them to steady state
+  double top_depth = start_depth-double(N_particles-1)*particle_spacing;
+  cout << "Inserting particles, top depth is: " << top_depth << endl;
   for (int p = 0; p< N_particles; p++)
   {
     // first the depth
-    this_depth = start_depth-double(p)*particle_spacing;
+    this_depth = top_depth+double(p)*particle_spacing;
 
     // now insert the particle into the list
     insert_part_into_CRN_list(CRN_plist, start_type, startxLoc,
@@ -60,6 +62,10 @@ list<LSDCRNParticle> initiate_SS_cosmo_column(int start_type, double startxLoc,
   return CRN_plist;
 }
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+
+
+
 
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 // update_list
@@ -885,6 +891,38 @@ void print_particle_list_3CRN(list<LSDCRNParticle>& CRN_list,
 	particles_out << endl;
 
 }
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+// This prints particle depths, concentrations and apparent erosion
+// rates for a particle list. 
+//
+//
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+void print_particles_and_apparent_erosion_3CRN
+		(list<LSDCRNParticle>&  eroded_part_list,
+		double rho_r,
+		double dt,
+	 double t_ime, ofstream& eroded_part_out, LSDCRNParameters& CRN_param)
+{
+  list<LSDCRNParticle>::iterator part_iter;
+  part_iter = eroded_part_list.begin();
+  while (part_iter != eroded_part_list.end())
+  {
+    eroded_part_out << t_ime << " "
+      << (*part_iter).getdLoc() << " "
+      << (*part_iter).getConc_10Be() << " "
+      << (*part_iter).getConc_14C() << " "
+      << (*part_iter).getConc_21Ne() << " "
+      << (*part_iter).apparent_erosion_10Be_neutron_only(rho_r, CRN_param) << " "
+      << (*part_iter).apparent_erosion_14C_neutron_only(rho_r, CRN_param) << " "
+      << (*part_iter).apparent_erosion_21Ne(rho_r, CRN_param) << " "    
+      << endl;
+    part_iter++;
+  }
+}
+
+
 
 void print_particle_list_vec(vector< list<LSDCRNParticle> >& CRN_list_vec,
 		vector<int>& row_list,
@@ -950,6 +988,8 @@ void print_eroded_list_vec(vector< list<LSDCRNParticle> >& eroded_part_list,
 	}
 }
 
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This prints all the particles in a list vec, with their concentrations
 void print_eroded_list_vec_3CRN(vector< list<LSDCRNParticle> >& eroded_part_list,
 		vector<int>& row_list,
 		vector<int>& col_list,
@@ -1027,7 +1067,14 @@ void print_eroded_list_vec_3CRN(vector< list<LSDCRNParticle> >& eroded_part_list
 		}
 	}
 }
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This prints information to a file, it contains information about the 
+// location of the samples in the form of rows and columns, 
+// used for distributed data
+// It prints apparent erosion rates based on neutron only production
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 void print_particles_for_erosion_lists_3CRN_neutron_only
 		(list<LSDCRNParticle>&  eroded_part_list,
 		int i,

@@ -144,6 +144,15 @@ void update_list_z_location(list<LSDCRNParticle>& CRN_list,
 void print_particle_list(list<LSDCRNParticle>& CRN_list,
 							double t_ime, ofstream& particles_out);
 
+// prints the particles and apparent erosion rates
+// each particle has its own row
+void print_particles_and_apparent_erosion_3CRN
+		(list<LSDCRNParticle>&  eroded_part_list,
+		double rho_r,
+		double dt,
+		 double t_ime, ofstream& eroded_part_out, LSDCRNParameters& CRN_param);
+
+
 void print_particle_list_3CRN(list<LSDCRNParticle>& CRN_list,
 							double t_ime, ofstream& particles_out);
 
