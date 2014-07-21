@@ -59,6 +59,18 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN_neutron(list<LSDCRNParticle
 	     double particle_spacing, LSDCRNParameters& CRN_param);
 
 
+// this calculates the apparent erosion rates, and returns them in a vector
+// erosion rates are in m/yr
+// [0] = 10Be
+// [1] = 21Ne
+// [2] = 14C
+vector<double> calculate_apparent_erosion_3CRN_neutron(list<LSDCRNParticle>& CRN_list,
+		double rho_r, LSDCRNParameters& CRN_param );
+
+
+
+
+
 // this function updates lists that are distributed in space
 // effectively a distributed version of update_CRN_list
 void update_CRN_list_vec( vector< list<LSDCRNParticle> >& CRN_list_vec,
@@ -136,7 +148,7 @@ void update_list_z_location(list<LSDCRNParticle>& CRN_list,
 //
 // Uplift component is a distance, e.g., U*dt
 void update_list_z_for_advective_coord_system(list<LSDCRNParticle>& CRN_list,
-							double uplift_component)
+							double uplift_component);
 
 // this prints information form a particle list
 // the current function prints in the format

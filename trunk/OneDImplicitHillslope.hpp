@@ -57,6 +57,9 @@ class OneDImplicitHillslope
     double run_dimensional_hillslope_timestep(double& dt_hat, double& t_hat_ime,
                                    double & t_ime, double uplift, double tolerance);
 
+    // calcualtes curvature in deimensional space
+    double calculate_dimensional_ridgetop_curvature();
+
     // this calculates change in zeta at the ridgetop. Only works if zeta
     // has been initialised
     double get_dz_ridgetop();

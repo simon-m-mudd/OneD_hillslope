@@ -141,7 +141,7 @@ int main (int nNumberofArgs,char *argv[])
   // set time parameters. Time is scaled by 
   double dt_hat =0.01;
   double endTime = 4;
-  double t_ime = 0;
+  double t_ime_hat = 0;
   double dimensional_dt = 0.1;
   double tolerance = 0.000001;
   double t_ime_spacing = 10000;
@@ -156,17 +156,24 @@ int main (int nNumberofArgs,char *argv[])
   double dzeta;
   
   list<LSDCRNParticle> eroded_list;
+  //double app_10Be_eros;
+  //double app_14C_eros;
+  //double app_21Ne_eros;
+  
+  double app_D;  
+  double D_err;
+  vector<double> app_eros;
   
   // set the new D
   current_D = start_D*D_ratio;
   Hillslope.set_D(current_D);
   current_Uhat = Hillslope.U_hat_from_dimensional_U(start_erosion); 
   // run the loop
-  while (t_ime < endTime)
+  while (t_ime_hat < endTime)
   {
     
     // do a timestep
-    dimensional_dt = Hillslope.run_dimensional_hillslope_timestep(dt_hat,t_hat_ime,t_ime,start_erosion,tolerance);
+    dimensional_dt = Hillslope.run_dimensional_hillslope_timestep(dt_hat,t_ime_hat,t_ime,start_erosion,tolerance);
     
     // need to update the zeta location of all the particles. CRN_funcs uses an
     // absolute coordinate system so in the advective coordinate system of the dimensional
@@ -183,8 +190,8 @@ int main (int nNumberofArgs,char *argv[])
     						
     // update the particles
     eroded_list =  update_CRN_list_eros_limit_3CRN(CRN_plist,dimensional_dt, 
-                     double rho_r,start_type,start_depth,startxLoc,
-	                   zeta_rt_old,double zeta_rt, particle_spacing, CRN_param);
+                     rho_r,start_type,start_depth,startxloc,
+	                   zeta_rt_old, zeta_rt, particle_spacing, CRN_param);
     
     // check to see if we print
     if(t_ime >= next_print_time)
@@ -192,7 +199,18 @@ int main (int nNumberofArgs,char *argv[])
       // first reset the next print time:
       next_print_time+=t_ime_spacing;
       
+      // check the apparent erosion rate and the apparent D
+      app_eros = calculate_apparent_erosion_3CRN_neutron(CRN_plist,
+		             rho_r, CRN_param );
+		  app_D = -rho_ratio*app_eros[0]/
+              Hillslope.calculate_dimensional_ridgetop_curvature();
+              
+      D_err = fabs((app_D-current_D)/current_D);                   
+		             
+      cout << "Time is: " << t_ime << " years, app E (10Be) is: " << app_eros[0] 
+           << " , app D is: " << app_D << " and D_err is: " << D_err << endl;
       // now print to file
+      
     }
     
     

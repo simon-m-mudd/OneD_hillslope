@@ -492,6 +492,29 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN_neutron(list<LSDCRNParticle
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This function calculates the apparent erosion rate from 3CRNs based on neutron
+// only assumption from the first particle in the list
+// without mixing, this will be the top particle
+// rho_r is the rock density
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+vector<double> calculate_apparent_erosion_3CRN_neutron(list<LSDCRNParticle>& CRN_list,
+		double rho_r, LSDCRNParameters& CRN_param )
+{
+	vector<double> apparent_erosion(3,0.0);
+  list<LSDCRNParticle>::iterator part_iter;
+
+	// first go through and update the CRN concentrations
+	// in the list
+	part_iter = CRN_list.begin();
+  apparent_erosion[0] = (*part_iter).apparent_erosion_10Be_neutron_only(rho_r, CRN_param);
+  apparent_erosion[1] =(*part_iter).apparent_erosion_14C_neutron_only(rho_r, CRN_param);
+  apparent_erosion[2] =(*part_iter).apparent_erosion_21Ne(rho_r, CRN_param);
+  
+  return apparent_erosion; 
+
+}
+
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 // 
 // FUNCTIONS FOR SPATIALLY HETEROGENOUS COSMO PRODUCTION
@@ -641,8 +664,10 @@ vector< list<LSDCRNParticle> > update_CRN_list_vec_with_eroded_3CRN_neutron
 	return elv;
 }
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+// This creates a list vec and inserts a single particle into each element
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 void initialize_CRN_list_vec( vector< list<LSDCRNParticle> >& CRN_list_vec,
 		Array2D<double>& zeta, vector<int>& row_list,
 		vector<int>& col_list, int start_type, double start_depth,
@@ -661,7 +686,7 @@ void initialize_CRN_list_vec( vector< list<LSDCRNParticle> >& CRN_list_vec,
 		CRN_list_vec.push_back(temp_list);
 	}
 }
-
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -692,7 +717,7 @@ void collect_particles(list<LSDCRNParticle>& collected_list,
 		}
 	}
 }
-
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 void manipulate_and_print_collected_particles(double t_ime,
 			double rho_r,

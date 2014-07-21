@@ -484,14 +484,14 @@ double OneDImplicitHillslope::run_dimensional_hillslope_timestep(double& dt_hat,
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // This gets the dimensional ridgetop curvature
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-double calculate_dimensional_ridgetop_curvature()
+double OneDImplicitHillslope::calculate_dimensional_ridgetop_curvature()
 {
   double C_HT;
   double top_term;
-  double bottom_term
+  double bottom_term;
   int i = ridgetop_node;
   
-  if ( int(zeta.size()) == N_nodes && int(zeta_lts.size()) == N_nodes)
+  if ( int(zeta_dimen.size()) == n_nodes && int(zeta_lts_dimen.size()) == n_nodes)
   {
     top_term = zeta_dimen[i+1] - 2*zeta_dimen[i] + zeta_dimen[i-1];
     bottom_term = (x[i]-x[i-1])*(x[i]-x[i-1]);
@@ -514,9 +514,9 @@ double calculate_dimensional_ridgetop_curvature()
 double OneDImplicitHillslope::get_dz_ridgetop()
 {
   double dz;
-  if ( int(zeta.size()) == N_nodes && int(zeta_lts.size()) == N_nodes)
+  if ( int(zeta_dimen.size()) == n_nodes && int(zeta_lts_dimen.size()) == n_nodes)
   {
-    dz =  zeta[ ridgetop_node ]- zeta_lts[ ridgetop_node ];
+    dz =  zeta_dimen[ ridgetop_node ]- zeta_lts_dimen[ ridgetop_node ];
   }
   else
   {
@@ -532,9 +532,9 @@ double OneDImplicitHillslope::get_dz_ridgetop()
 double OneDImplicitHillslope::get_current_ridgetop_dimensional_zeta()
 {
   double zeta_rt;
-  if ( int(zeta.size()) == N_nodes)
+  if ( int(zeta_dimen.size()) == n_nodes)
   {
-    zeta_rt =  zeta[ ridgetop_node ];
+    zeta_rt =  zeta_dimen[ ridgetop_node ];
   }
   else
   {
