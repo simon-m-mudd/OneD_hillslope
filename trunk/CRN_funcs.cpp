@@ -293,7 +293,7 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN(list<LSDCRNParticle>& CRN_l
 	double zeta_old,double zeta_new,
         double particle_spacing, LSDCRNParameters& CRN_param)
 {
-	double d,eff_d,z_p,eff_eros_rate;
+	double d,eff_d,z_p,eff_eros_rate,d_p;
 	int eroded_test;
 	double effective_dt;
 	double d_frac;
@@ -303,6 +303,7 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN(list<LSDCRNParticle>& CRN_l
 	list<LSDCRNParticle>::iterator remove_iter;
 
 	eff_eros_rate = rho_r*0.1*(zeta_new-zeta_old)/dt;
+	//cout << "Line 306 effective erosion rate is: " << eff_eros_rate << endl;
 
 	// first go through and update the CRN concentrations
 	// in the list
@@ -371,8 +372,8 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN(list<LSDCRNParticle>& CRN_l
 	} while (eroded_test == 0);
 
 	// now see if we insert a particle
-	z_p = (CRN_list.back()).get_zetaLoc();
-	d = zeta_new-z_p;
+	d = (CRN_list.back()).getdLoc();
+	//cout << "bottom particle depth is: " << d << endl;
 	if ( (start_depth - d) >= particle_spacing)
 	{
 		//cout << "LINE 95 inserting_particle!" << endl;
@@ -441,13 +442,13 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN_neutron(list<LSDCRNParticle
 		( *part_iter ).update_14C_conc_neutron_only(effective_dt,eff_eros_rate, CRN_param);
 		( *part_iter ).update_21Ne_conc(effective_dt,eff_eros_rate, CRN_param);
 
-		// update the depths (note, teh z_locations arene't updated
+		// update the depths (note, the z_locations arene't updated
 		// because it is a rock system, no 'fluffing' of soil occurs
 		( *part_iter ).update_depths(d, eff_d);
 		part_iter++;
 	}
 
-	// now go through the list and see if the partiucles
+	// now go through the list and see if the particles
 	// are either eroded or a new particle needs to be added
 	// particles are added to the back of the list and eroded from the front
 	// so first check for erosion

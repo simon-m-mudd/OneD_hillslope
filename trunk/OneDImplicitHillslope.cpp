@@ -24,7 +24,7 @@ OneDImplicitHillslope& OneDImplicitHillslope::operator=(const OneDImplicitHillsl
  {
   if (&rhs != this)
    {
-    create(get_n_nodes(),get_ridgetop_nod() ,get_t_hat_peak(),get_U_hat_peak(),
+    create(get_n_nodes(),get_ridgetop_node() ,get_t_hat_peak(),get_U_hat_peak(),
     	   get_U_hat_width(),get_zeta_hat(),get_zeta_last_timestep(),get_zeta_intermediate(),
     	   get_f(),get_Coeff_matrix(),get_x_hat(),get_A_hat_denom(),get_B_hat_denom(),
     	   get_A_slope_denom2(),get_B_slope_denom2(),get_D(), get_S_c(), get_L_H(), 
@@ -279,6 +279,15 @@ void OneDImplicitHillslope::set_L_H(double new_L_H)
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This sets the dimensional zeta based on the dimensional parameters
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+void OneDImplicitHillslope::populate_dimensional_zeta()
+{
+  zeta_dimen = dimensional_zeta_from_zeta_hat();
+  zeta_lts_dimen = dimensional_zeta_from_zeta_hat();
+} 
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // This checks to make sure that the parameters are set to something reasonable
 // for running a dimensional simulation
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -493,6 +502,10 @@ double OneDImplicitHillslope::calculate_dimensional_ridgetop_curvature()
   
   if ( int(zeta_dimen.size()) == n_nodes && int(zeta_lts_dimen.size()) == n_nodes)
   {
+    //cout << "zetas, i+1: " <<  zeta_dimen[i+1] << " rt: "  << zeta_dimen[i] 
+    //     <<  " i-1: " << zeta_dimen[i-1] << endl;
+    //cout << "xs, i: " << x[i] << " i-1: " << x[i-1] << endl;
+  
     top_term = zeta_dimen[i+1] - 2*zeta_dimen[i] + zeta_dimen[i-1];
     bottom_term = (x[i]-x[i-1])*(x[i]-x[i-1]);
     C_HT = top_term / bottom_term;

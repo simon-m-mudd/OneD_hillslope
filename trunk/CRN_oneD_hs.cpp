@@ -17,6 +17,7 @@
 #include "LSDCRNParameters.hpp"
 #include "LSDParticle.hpp"
 #include "CRN_funcs.hpp"
+#include "LSDStatsTools.hpp"
 using namespace std;
 
 int main (int nNumberofArgs,char *argv[])
@@ -52,32 +53,30 @@ int main (int nNumberofArgs,char *argv[])
 
   // read data elements from infile
   string stringin;
-  double start_erosion;
   double rho_r;
   double S_c;
-  double start_D;
   double particle_spacing;
   double start_depth;
   double L_H;
+  
+  double start_erosion, start_D, start_Dratio;
+  int N_er,N_sD, N_Dr;
+  double dstart_erosion, dstart_D, dDratio;
 
   // read in data from parameter file
-  infile >> stringin >> start_erosion >> stringin >> rho_r;
-  infile >> stringin >> S_c >> stringin >> start_D;
+  infile >> stringin >> start_erosion >> stringin >> N_er >> stringin >> dstart_erosion;
+  infile >> stringin >> start_D >> stringin >> N_sD >> stringin >> dstart_D;
+  infile >> stringin >> start_Dratio >> stringin >> N_Dr >> stringin >> dDratio;
+  infile >> stringin >> rho_r >> stringin >> S_c;
   infile >> stringin >> particle_spacing >> stringin >> start_depth;
   infile >> stringin >> L_H;
+  
+  cout << "start erosion: " << start_erosion << " N erosion: " << N_er << endl;
+  cout << "start D: " << start_D << " N D:" << N_sD << endl;
+  cout << "start D ratop: " << start_Dratio << " N Dratio:" << N_Dr << endl;
 
   // set the rho ratio to 1: we are not going to consider density changes
   double rho_ratio = 1;
-
-  // get the effective erosion (in g/cm^2/yr)
-  // for this to work properly rho_r needs to be in kg/m^3
-  double eff_eros_rate = start_erosion*rho_r/10;
-  
-  cout << "Erosion rate is: " << start_erosion << " and effective erosion is: " 
-       << eff_eros_rate << endl; 
-
-  // convert the erosion rate to dimensionless units
-  double U_hat_start = (start_erosion*rho_ratio*2*L_H)/(start_D*S_c);
 
   // now set up a column 
   int start_type = 1;
@@ -90,132 +89,178 @@ int main (int nNumberofArgs,char *argv[])
   // set the parameters to be nucleonic only
   CRN_param.set_Neutron_only_parameters();
 
-  // now get a steady hillslope
-  // create a hillslope
-  OneDImplicitHillslope Hillslope;
 
-  // set the dimensional parameters in the hillslope
-  Hillslope.set_D(start_D);
-  Hillslope.set_S_c(S_c);
-  Hillslope.set_L_H(L_H);
-  Hillslope.set_rho_ratio(rho_ratio);
-
-  // get the dimensionless U_hat this way
-  double U_hat_test = Hillslope.U_hat_from_dimensional_U(start_erosion);
-
-  cout << "Test of dimensionalising U_hat, directly: " << U_hat_start 
-    << " and from object: " << U_hat_test << endl;
-
-  // set up a steady nondimensional hillslope
-  Hillslope.set_analytical_steady(U_hat_start);
-
-  // get the ridgetop node
-  int ridgetop_node = Hillslope.get_ridgetop_nod();
-
-  // get the dimensional zeta
-  vector<double> zeta_dimen = Hillslope.dimensional_zeta_from_zeta_hat();
-
-  // print the elevation at the ridgetop
-  double ridgetop_zeta = zeta_dimen[ridgetop_node];
-  cout << "The elevation at the ridgetop is: " << ridgetop_zeta << endl;
-
-  // start with a column of particles at steady state
-  list<LSDCRNParticle> CRN_plist = initiate_SS_cosmo_column(start_type, startxloc,
-		      start_depth, particle_spacing, 
-		      ridgetop_zeta, rho_r, eff_eros_rate,
-		      CRN_param);
-
-  // now print these particles to file to see if they are at steady state
-  string CRN_suffix = "CRNpdata";
-  string CRN_of_name = pathname+param_name+dot+CRN_suffix;
-
-  ofstream CRNdataout;
-  CRNdataout.open(CRN_of_name.c_str());
-
-  double dt = 0.1;
-  double t_ime = 0;
-  print_particles_and_apparent_erosion_3CRN(CRN_plist,rho_r,dt,t_ime,
-					    CRNdataout, CRN_param);
-					    
 	// now start a hillslope model: we start with a step change in D 	
   // set time parameters. Time is scaled by 
-  double dt_hat =0.01;
-  double endTime = 4;
-  double t_ime_hat = 0;
-  double dimensional_dt = 0.1;
+  double dt;
+  double t_ime;
+  double dt_hat;
+  double endTime = 5;
+  double t_ime_hat;
+  double dimensional_dt;
   double tolerance = 0.000001;
-  double t_ime_spacing = 10000;
+  double t_ime_spacing = 3000;
   double next_print_time = t_ime_spacing;
 
-  double D_ratio = 0.5;
   double current_D;
   double current_Uhat;
   double elev_uplift;
   double zeta_rt;
   double zeta_rt_old;
+  double zeta_rt_old_uplift_corrected;
   double dzeta;
-  
-  list<LSDCRNParticle> eroded_list;
-  //double app_10Be_eros;
-  //double app_14C_eros;
-  //double app_21Ne_eros;
-  
   double app_D;  
   double D_err;
   vector<double> app_eros;
   
-  // set the new D
-  current_D = start_D*D_ratio;
-  Hillslope.set_D(current_D);
-  current_Uhat = Hillslope.U_hat_from_dimensional_U(start_erosion); 
-  // run the loop
-  while (t_ime_hat < endTime)
-  {
-    
-    // do a timestep
-    dimensional_dt = Hillslope.run_dimensional_hillslope_timestep(dt_hat,t_ime_hat,t_ime,start_erosion,tolerance);
-    
-    // need to update the zeta location of all the particles. CRN_funcs uses an
-    // absolute coordinate system so in the advective coordinate system of the dimensional
-    // hillslope we need to update the zeta locations
-    elev_uplift = start_erosion*dimensional_dt;
-    
-    // now update the particles based on this uplift
-    update_list_z_for_advective_coord_system(CRN_plist,elev_uplift);
-    
-    // now get the zeta new and zeta_old
-    zeta_rt = Hillslope.get_current_ridgetop_dimensional_zeta();
-    dzeta = Hillslope.get_dz_ridgetop();
-    zeta_rt_old = zeta_rt - dzeta;
-    						
-    // update the particles
-    eroded_list =  update_CRN_list_eros_limit_3CRN(CRN_plist,dimensional_dt, 
-                     rho_r,start_type,start_depth,startxloc,
-	                   zeta_rt_old, zeta_rt, particle_spacing, CRN_param);
-    
-    // check to see if we print
-    if(t_ime >= next_print_time)
-    {
-      // first reset the next print time:
-      next_print_time+=t_ime_spacing;
-      
-      // check the apparent erosion rate and the apparent D
-      app_eros = calculate_apparent_erosion_3CRN_neutron(CRN_plist,
-		             rho_r, CRN_param );
-		  app_D = -rho_ratio*app_eros[0]/
-              Hillslope.calculate_dimensional_ridgetop_curvature();
-              
-      D_err = fabs((app_D-current_D)/current_D);                   
-		             
-      cout << "Time is: " << t_ime << " years, app E (10Be) is: " << app_eros[0] 
-           << " , app D is: " << app_D << " and D_err is: " << D_err << endl;
-      // now print to file
-      
-    }
-    
-    
-  }      
-					    
+  double eff_eros_rate;
+  double U_hat_start; 
+  
+  double current_erosion;
+  double current_start_D;
+  double current_Dratio;
+     
+  list<LSDCRNParticle> eroded_list;
 
+
+  // enter the loop for erosion rate
+  for(int er_i = 0; er_i< N_er; er_i++)
+  {
+    current_erosion = start_erosion+er_i*dstart_erosion;
+    cout << "\n\nCurrent erosion is: " << current_erosion << endl;
+    
+    // enter the loop for starting D
+    for (int sD_i = 0; sD_i< N_sD; sD_i++ )
+    {
+      current_start_D = start_D+sD_i*dstart_D;
+      cout << "Current starting diffusivity is: " << current_start_D << endl;
+    
+      // enter the loop for D_ratio
+      for (int Dr_i = 0; Dr_i< N_Dr; Dr_i++)
+      {
+
+        current_Dratio = start_Dratio+Dr_i*dDratio;
+        cout << "Current D ratio is: " << current_Dratio << endl;
+
+        // get the effective erosion (in g/cm^2/yr)
+        // for this to work properly rho_r needs to be in kg/m^3
+        eff_eros_rate = current_erosion*rho_r/10;
+      
+        // convert the erosion rate to dimensionless units
+        U_hat_start = (current_erosion*rho_ratio*2*L_H)/(current_start_D*S_c);
+
+        // deal with the filenames
+        string undersc = "_";
+        string CRN_suffix = "CRNpdata";
+        string CRN_runname = dot+itoa(er_i)+undersc+itoa(sD_i)+undersc+itoa(Dr_i);
+        string CRN_of_name = pathname+param_name+CRN_runname+dot+CRN_suffix;
+      
+        ofstream CRNdataout;
+        CRNdataout.open(CRN_of_name.c_str());
+        
+        CRNdataout <<  current_erosion << "\t" << current_start_D << "\t"
+                   <<  current_Dratio << endl;
+
+        // create a hillslope
+        OneDImplicitHillslope Hillslope;
+      
+        // set the dimensional parameters in the hillslope
+        Hillslope.set_D(current_start_D);
+        Hillslope.set_S_c(S_c);
+        Hillslope.set_L_H(L_H);
+        Hillslope.set_rho_ratio(rho_ratio);      
+
+        // set up a steady nondimensional hillslope
+        Hillslope.set_analytical_steady(U_hat_start);
+        Hillslope.populate_dimensional_zeta();
+
+        // get the erosion properties        
+        zeta_rt = Hillslope.get_current_ridgetop_dimensional_zeta();
+
+       
+        // start with a column of particles at steady state
+        list<LSDCRNParticle> CRN_plist = initiate_SS_cosmo_column(start_type, startxloc,
+		        start_depth, particle_spacing, 
+		        zeta_rt, rho_r, eff_eros_rate,
+		        CRN_param);      
+      
+        // set the new D
+        current_D = current_start_D*current_Dratio;
+        Hillslope.set_D(current_D);
+        current_Uhat = Hillslope.U_hat_from_dimensional_U(current_erosion); 
+                
+        // reset time
+        t_ime = 0;
+        t_ime_hat = 0;
+        dt = 1;            // this will get replaced before getting used
+        dt_hat = 0.001;   // dimensionless time spacing
+        
+        // run the loop
+        while (t_ime_hat < endTime)
+        //for(int i = 0; i<200; i++)
+        {                
+          // do a timestep
+          dimensional_dt = Hillslope.run_dimensional_hillslope_timestep(dt_hat,
+                            t_ime_hat,t_ime,start_erosion,tolerance);
+          
+          // need to update the zeta location of all the particles. CRN_funcs uses an
+          // absolute coordinate system so in the advective coordinate system of the dimensional
+          // hillslope we need to update the zeta locations
+          elev_uplift = start_erosion*dimensional_dt;
+          
+          // now update the particles based on this uplift
+          // all of the particles will move toward the surface by a distance elev_uplift
+          update_list_z_for_advective_coord_system(CRN_plist,elev_uplift);
+              
+          // now get the zeta new and zeta_old
+          zeta_rt = Hillslope.get_current_ridgetop_dimensional_zeta();
+          dzeta = Hillslope.get_dz_ridgetop();
+          zeta_rt_old = zeta_rt - dzeta;
+          zeta_rt_old_uplift_corrected =  zeta_rt_old - elev_uplift;
+
+          // update the particles
+          eroded_list =  update_CRN_list_eros_limit_3CRN(CRN_plist,dimensional_dt, 
+                           rho_r,start_type,start_depth,startxloc,
+      	                   zeta_rt_old_uplift_corrected, zeta_rt, 
+                           particle_spacing, CRN_param);
+      
+          print_particles_and_apparent_erosion_3CRN(CRN_plist,rho_r,dt,t_ime,
+      					    CRNdataout, CRN_param);
+          
+          // check to see if we print
+          if(t_ime >= next_print_time)
+          {
+            // first reset the next print time:
+            next_print_time+=t_ime_spacing;
+            
+            // check the apparent erosion rate and the apparent D
+            app_eros = calculate_apparent_erosion_3CRN_neutron(CRN_plist,
+      		             rho_r, CRN_param );
+      		  app_D = -rho_ratio*app_eros[0]/
+                    Hillslope.calculate_dimensional_ridgetop_curvature();
+                    
+            D_err = fabs((app_D-current_D)/current_D);                   
+      		  
+            //cout << "Time is: " << t_ime << " and ridgetop zeta is "
+            //     << Hillslope.get_current_ridgetop_dimensional_zeta()           
+            //     << " years, app E (10Be) is: " << app_eros[0] 
+            //     << " , app D is: " << app_D << " and D_err is: " << D_err << endl;
+      
+      
+            CRNdataout << t_ime << "\t" << t_ime_hat << "\t"
+                 << Hillslope.get_current_ridgetop_dimensional_zeta()           
+                 << "\t" << app_eros[0] 
+                 << "\t" << app_D << "\t" << D_err << endl;
+            // now print to file
+            //print_particles_and_apparent_erosion_3CRN(CRN_plist,rho_r,dt,t_ime,
+      			//		    CRNdataout, CRN_param);        
+          }   
+          
+          CRNdataout.close();   
+        }                // end model run
+      }                  // end D_ratio loop
+    }                    // end starting_D loop
+  }                      // end loop for erosion rate
+      
 }
 

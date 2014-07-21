@@ -41,6 +41,10 @@ class OneDImplicitHillslope
     void set_S_c(double new_S_c) {S_c = new_S_c; }
     void set_L_H(double new_L_H);
     void set_rho_ratio(double new_rho_ratio) {rho_ratio = new_rho_ratio; }
+    
+    // this just dimensionalises zeta_hat and populates zeta_dimen and zeta_lts_dimen
+    // with the resulting vectors
+    void populate_dimensional_zeta();
 
     // check if the dimensional parameters have been set
     bool check_if_dimensional_parameters_set();
@@ -102,7 +106,7 @@ class OneDImplicitHillslope
 
 		// accessor functions (used for = operator)
 		int get_n_nodes() const						{return n_nodes;}
-		int get_ridgetop_nod() const				{return ridgetop_node;}
+		int get_ridgetop_node() const				{return ridgetop_node;}
 		double get_t_hat_peak() const				{return t_hat_peak;}
 		double get_U_hat_peak() const				{return U_hat_peak;}
 		double get_U_hat_width() const				{return U_hat_width;}
