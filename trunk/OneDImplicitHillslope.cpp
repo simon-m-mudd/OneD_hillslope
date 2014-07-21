@@ -450,6 +450,7 @@ double OneDImplicitHillslope::U_hat_from_dimensional_U(double U)
 
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // This runs a timestep but updates dimensional space in the process
+// uplift is in m/yr
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 double OneDImplicitHillslope::run_dimensional_hillslope_timestep(double& dt_hat, 
                         double& t_hat_ime, double& t_ime, double uplift, double tolerance)
@@ -479,6 +480,69 @@ double OneDImplicitHillslope::run_dimensional_hillslope_timestep(double& dt_hat,
   
 }     
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This gets the dimensional ridgetop curvature
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+double calculate_dimensional_ridgetop_curvature()
+{
+  double C_HT;
+  double top_term;
+  double bottom_term
+  int i = ridgetop_node;
+  
+  if ( int(zeta.size()) == N_nodes && int(zeta_lts.size()) == N_nodes)
+  {
+    top_term = zeta_dimen[i+1] - 2*zeta_dimen[i] + zeta_dimen[i-1];
+    bottom_term = (x[i]-x[i-1])*(x[i]-x[i-1]);
+    C_HT = top_term / bottom_term;
+  }
+  else
+  {
+    cout <<"Getting dz dimensional, but you haven't initialised dimensional run" << endl;
+    C_HT = 0;
+  }
+  return C_HT;   
+
+} 
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// This gets the change in zeta (for use with cosmo tracking) 
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+double OneDImplicitHillslope::get_dz_ridgetop()
+{
+  double dz;
+  if ( int(zeta.size()) == N_nodes && int(zeta_lts.size()) == N_nodes)
+  {
+    dz =  zeta[ ridgetop_node ]- zeta_lts[ ridgetop_node ];
+  }
+  else
+  {
+    cout <<"Getting dz dimensional, but you haven't initialised dimensional run" << endl;
+    dz = 0;
+  } 
+  return dz; 
+}
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// this gets the current dimensional zeta at the ridgetop
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+double OneDImplicitHillslope::get_current_ridgetop_dimensional_zeta()
+{
+  double zeta_rt;
+  if ( int(zeta.size()) == N_nodes)
+  {
+    zeta_rt =  zeta[ ridgetop_node ];
+  }
+  else
+  {
+    cout <<"Getting dz dimensional, but you haven't initialised dimensional run" << endl;
+    zeta_rt = 0;
+  } 
+  return zeta_rt; 
+ }
 
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this resets the 1D hillslope so that the coefficient matrices and

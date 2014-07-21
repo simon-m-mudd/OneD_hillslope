@@ -128,6 +128,16 @@ void manipulate_and_print_collected_particles(double t_ime,
 void update_list_z_location(list<LSDCRNParticle>& CRN_list,
 							double zeta_new);
 
+// This is for use with an advective coordinate system, where
+// zeta_adv = zeta-zeta_bl, whith zeta_bl is the base level
+//
+// You give the function the uplift displacement and the zetas are all updated
+// accordingly
+//
+// Uplift component is a distance, e.g., U*dt
+void update_list_z_for_advective_coord_system(list<LSDCRNParticle>& CRN_list,
+							double uplift_component)
+
 // this prints information form a particle list
 // the current function prints in the format
 // n_parts t_ime d_loc1  d_loc2 ...
@@ -148,9 +158,8 @@ void print_particle_list(list<LSDCRNParticle>& CRN_list,
 // each particle has its own row
 void print_particles_and_apparent_erosion_3CRN
 		(list<LSDCRNParticle>&  eroded_part_list,
-		double rho_r,
-		double dt,
-		 double t_ime, ofstream& eroded_part_out, LSDCRNParameters& CRN_param);
+		double rho_r, double dt, double t_ime, ofstream& eroded_part_out, 
+    LSDCRNParameters& CRN_param);
 
 
 void print_particle_list_3CRN(list<LSDCRNParticle>& CRN_list,

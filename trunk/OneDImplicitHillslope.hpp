@@ -53,9 +53,16 @@ class OneDImplicitHillslope
        
     // this runs a hillslope timestep in dimensional and wraps it in dimensional
     // space
+    // returns dimensional dt
     double run_dimensional_hillslope_timestep(double& dt_hat, double& t_hat_ime,
                                    double & t_ime, double uplift, double tolerance);
 
+    // this calculates change in zeta at the ridgetop. Only works if zeta
+    // has been initialised
+    double get_dz_ridgetop();
+    
+    // this gets the current dimensional zeta at the ridgetop
+    double get_current_ridgetop_dimensional_zeta();
 
 		// reset hillslope to a new flat surface using the same spatial discritization
 		void reset_hillslope(double tp_temp, double Up_temp, double Uw_temp);

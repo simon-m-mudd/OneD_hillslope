@@ -72,6 +72,9 @@ int main (int nNumberofArgs,char *argv[])
   // get the effective erosion (in g/cm^2/yr)
   // for this to work properly rho_r needs to be in kg/m^3
   double eff_eros_rate = start_erosion*rho_r/10;
+  
+  cout << "Erosion rate is: " << start_erosion << " and effective erosion is: " 
+       << eff_eros_rate << endl; 
 
   // convert the erosion rate to dimensionless units
   double U_hat_start = (start_erosion*rho_ratio*2*L_H)/(start_D*S_c);
@@ -133,6 +136,68 @@ int main (int nNumberofArgs,char *argv[])
   double t_ime = 0;
   print_particles_and_apparent_erosion_3CRN(CRN_plist,rho_r,dt,t_ime,
 					    CRNdataout, CRN_param);
+					    
+	// now start a hillslope model: we start with a step change in D 	
+  // set time parameters. Time is scaled by 
+  double dt_hat =0.01;
+  double endTime = 4;
+  double t_ime = 0;
+  double dimensional_dt = 0.1;
+  double tolerance = 0.000001;
+  double t_ime_spacing = 10000;
+  double next_print_time = t_ime_spacing;
+
+  double D_ratio = 0.5;
+  double current_D;
+  double current_Uhat;
+  double elev_uplift;
+  double zeta_rt;
+  double zeta_rt_old;
+  double dzeta;
+  
+  list<LSDCRNParticle> eroded_list;
+  
+  // set the new D
+  current_D = start_D*D_ratio;
+  Hillslope.set_D(current_D);
+  current_Uhat = Hillslope.U_hat_from_dimensional_U(start_erosion); 
+  // run the loop
+  while (t_ime < endTime)
+  {
+    
+    // do a timestep
+    dimensional_dt = Hillslope.run_dimensional_hillslope_timestep(dt_hat,t_hat_ime,t_ime,start_erosion,tolerance);
+    
+    // need to update the zeta location of all the particles. CRN_funcs uses an
+    // absolute coordinate system so in the advective coordinate system of the dimensional
+    // hillslope we need to update the zeta locations
+    elev_uplift = start_erosion*dimensional_dt;
+    
+    // now update the particles based on this uplift
+    update_list_z_for_advective_coord_system(CRN_plist,elev_uplift);
+    
+    // now get the zeta new and zeta_old
+    zeta_rt = Hillslope.get_current_ridgetop_dimensional_zeta();
+    dzeta = Hillslope.get_dz_ridgetop();
+    zeta_rt_old = zeta_rt - dzeta;
+    						
+    // update the particles
+    eroded_list =  update_CRN_list_eros_limit_3CRN(CRN_plist,dimensional_dt, 
+                     double rho_r,start_type,start_depth,startxLoc,
+	                   zeta_rt_old,double zeta_rt, particle_spacing, CRN_param);
+    
+    // check to see if we print
+    if(t_ime >= next_print_time)
+    {
+      // first reset the next print time:
+      next_print_time+=t_ime_spacing;
+      
+      // now print to file
+    }
+    
+    
+  }      
+					    
 
 }
 

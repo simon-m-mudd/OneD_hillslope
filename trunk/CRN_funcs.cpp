@@ -216,6 +216,10 @@ list<LSDCRNParticle> update_CRN_list_eros_limit(list<LSDCRNParticle>& CRN_list,
 		{
 			d_frac = (zeta_old-z_p)/(zeta_old-zeta_new);
 			effective_dt = d_frac*dt;
+			
+			// this particle is sampled from the surface
+			d = 0;
+			eff_d = 0;			
 		}
 		else
 		{
@@ -318,6 +322,10 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN(list<LSDCRNParticle>& CRN_l
 		{
 			d_frac = (zeta_old-z_p)/(zeta_old-zeta_new);
 			effective_dt = d_frac*dt;
+			
+			// it has zero depth (sampled form surface)
+			d = 0;
+			eff_d = 0;
 		}
 		else
 		{
@@ -329,7 +337,7 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN(list<LSDCRNParticle>& CRN_l
 		( *part_iter ).update_14C_conc(effective_dt,eff_eros_rate, CRN_param);
 		( *part_iter ).update_21Ne_conc(effective_dt,eff_eros_rate, CRN_param);
 
-		// update the depths (note, teh z_locations arene't updated
+		// update the depths (note, the z_locations arene't updated
 		// because it is a rock system, no 'fluffing' of soil occurs
 		( *part_iter ).update_depths(d, eff_d);
 		part_iter++;
@@ -418,6 +426,10 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN_neutron(list<LSDCRNParticle
 		{
 			d_frac = (zeta_old-z_p)/(zeta_old-zeta_new);
 			effective_dt = d_frac*dt;
+
+			// it has zero depth (sampled form surface)
+			d = 0;
+			eff_d = 0;
 		}
 		else
 		{
@@ -759,12 +771,15 @@ void manipulate_and_print_collected_particles(double t_ime,
 	Ne_pdf_out << endl;
 
 }
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 // this takes a list and chages the zeta locations of all the particles
 // so that the colum can be inserted into a landscape with
 // a different surface elevation than before
 // the d loc data elements and eff_d remain the same
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 void update_list_z_location(list<LSDCRNParticle>& CRN_list,
 							double zeta_new)
 {
@@ -776,8 +791,37 @@ void update_list_z_location(list<LSDCRNParticle>& CRN_list,
 		part_iter++;
 	}
 }
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+// This is for use with an advective coordinate system, where
+// zeta_adv = zeta-zeta_bl, whith zeta_bl is the base level
+//
+// You give the function the uplift displacement and the zetas are all updated
+// accordingly
+//
+// Uplift component is a distance, e.g., U*dt
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+void update_list_z_for_advective_coord_system(list<LSDCRNParticle>& CRN_list,
+							double uplift_component)
+{
+	list<LSDCRNParticle>::iterator part_iter;
+	part_iter = CRN_list.begin();
+	double current_zeta;
+	double updated_zeta;
+	while (part_iter != CRN_list.end())
+	{
+		current_zeta = (*part_iter).get_zetaLoc();
+		updated_zeta = current_zeta+uplift_component;
+		(*part_iter).update_zetaLoc(updated_zeta);
+				
+		part_iter++;
+	}
+}
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 // this prints information form a particle list
 // the current function prints in the format
 // n_parts t_ime d_loc1  d_loc2 ...
@@ -791,6 +835,7 @@ void update_list_z_location(list<LSDCRNParticle>& CRN_list,
 // the first row is the depths of the particles,
 // second row is the 10Be conc (in atoms/g)
 // and the third row is the 14C conc (in atoms/g)
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 void print_particle_list(list<LSDCRNParticle>& CRN_list,
 			double t_ime, ofstream& particles_out)
 {
@@ -835,7 +880,7 @@ void print_particle_list(list<LSDCRNParticle>& CRN_list,
 	particles_out << endl;
 
 }
-
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 void print_particle_list_3CRN(list<LSDCRNParticle>& CRN_list,
 				double t_ime, ofstream& particles_out)
@@ -899,11 +944,8 @@ void print_particle_list_3CRN(list<LSDCRNParticle>& CRN_list,
 //
 //
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-void print_particles_and_apparent_erosion_3CRN
-		(list<LSDCRNParticle>&  eroded_part_list,
-		double rho_r,
-		double dt,
-	 double t_ime, ofstream& eroded_part_out, LSDCRNParameters& CRN_param)
+void print_particles_and_apparent_erosion_3CRN(list<LSDCRNParticle>&  eroded_part_list,
+		double rho_r, double dt, double t_ime, ofstream& eroded_part_out, LSDCRNParameters& CRN_param)
 {
   list<LSDCRNParticle>::iterator part_iter;
   part_iter = eroded_part_list.begin();
@@ -911,6 +953,7 @@ void print_particles_and_apparent_erosion_3CRN
   {
     eroded_part_out << t_ime << " "
       << (*part_iter).getdLoc() << " "
+      << (*part_iter).geteffective_dLoc() << " "
       << (*part_iter).getConc_10Be() << " "
       << (*part_iter).getConc_14C() << " "
       << (*part_iter).getConc_21Ne() << " "
