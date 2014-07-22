@@ -128,7 +128,7 @@ int main (int nNumberofArgs,char *argv[])
   // enter the loop for erosion rate
   for(int er_i = 0; er_i< N_er; er_i++)
   {
-    current_erosion = pow(10,start_erosion+double(er_i)*dstart_erosion);
+    current_erosion = pow(2,start_erosion+double(er_i)*dstart_erosion)*0.0001;
     cout << "\n\nCurrent erosion is: " << current_erosion << endl;
     
     // enter the loop for starting D
@@ -150,7 +150,7 @@ int main (int nNumberofArgs,char *argv[])
       
         // convert the erosion rate to dimensionless units
         U_hat_start = (current_erosion*rho_ratio*2*L_H)/(current_start_D*S_c);
-	cout << "Starting dimensionless U: " << U_hat_start 
+        cout << "Starting dimensionless U: " << U_hat_start 
              << " and eff_erosion: " << eff_eros_rate << endl;
 
         // deal with the filenames
