@@ -163,14 +163,16 @@ int main (int nNumberofArgs,char *argv[])
   // now print the hillslopes for the max pulse of incision 
   start_estar = 1;
   end_estar = 10;
+  OneDImplicitHillslope profHillslope(start_estar,start_estar,start_estar, 0.1);
+  
   vector<double> x_hat;
   Array1D<double> zeta_init;
   Array1D<double> zeta_final;
   Array1D<double> zeta_intermediate;
 
-  x_hat = Hillslope.get_x_hat();
-  Hillslope.set_analytical_steady(start_estar);
-  zeta_init = Hillslope.get_zeta_hat();
+  x_hat = profHillslope.get_x_hat();
+  profHillslope.set_analytical_steady(start_estar);
+  zeta_init = profHillslope.get_zeta_hat();
 
   // now run until the you get a big difference
   double dt_hatt = 0.0005;
@@ -179,16 +181,16 @@ int main (int nNumberofArgs,char *argv[])
   double ttolerance = 0.000001;
   while (t_ime_hatt < end_time_hatt)
   {
-    Hillslope.hillslope_timestep(dt_hatt, t_ime_hatt, end_estar, ttolerance);
+    profHillslope.hillslope_timestep(dt_hatt, t_ime_hatt, end_estar, ttolerance);
   }
   
   // now get zeta
-  zeta_intermediate =   Hillslope.get_zeta_hat();
+  zeta_intermediate =   profHillslope.get_zeta_hat();
   
   // and get the zeta with the same E* but with the proper R*
-  double this_estar = Hillslope.calculate_E_star();
-  Hillslope.set_analytical_steady(this_estar);
-  zeta_final = Hillslope.get_zeta_hat();
+  double this_estar = profHillslope.calculate_E_star();
+  profHillslope.set_analytical_steady(this_estar);
+  zeta_final = profHillslope.get_zeta_hat();
   
   // now print to file
   string HS_prof_name = "HS_prof";
