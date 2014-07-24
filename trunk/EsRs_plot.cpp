@@ -159,5 +159,49 @@ int main (int nNumberofArgs,char *argv[])
     EsRs_transient_out.close();
     
   }
+
+  // now print the hillslopes for the max pulse of incision 
+  start_estar = 1;
+  end_estar = 10;
+  vector<double> x_hat;
+  Array1D<double> zeta_init;
+  Array1D<double> zeta_final;
+  Array1D<double> zeta_intermediate;
+
+  x_hat = Hillslope.get_x_hat();
+  Hillslope.set_analytical_steady(start_estar);
+  zeta_init = Hillslope.get_zeta_hat();
+
+  // now run until the you get a big difference
+  double dt_hatt = 0.0005;
+  double t_ime_hatt = 0;
+  double end_time_hatt = 0.05;
+  double ttolerance = 0.000001;
+  while (t_ime_hatt < end_time_hatt)
+  {
+    Hillslope.hillslope_timestep(dt_hatt, t_ime_hatt, end_estar, ttolerance);
+  }
+  
+  // now get zeta
+  zeta_intermediate =   Hillslope.get_zeta_hat();
+  
+  // and get the zeta with the same E* but with the proper R*
+  double this_estar = Hillslope.calculate_E_star();
+  Hillslope.set_analytical_steady(this_estar);
+  zeta_final = Hillslope.get_zeta_hat();
+  
+  // now print to file
+  string HS_prof_name = "HS_prof";
+  string HS_profiles = pathname + param_name+"_"+HS_prof_name+".data";
+  ofstream HS_prof_out;
+  HS_prof_out.open(HS_profiles.c_str());
+  
+  int sz_prof = zeta_final.dim1();
+  for (int i = 0; i<sz_prof; i++)
+  {
+    HS_prof_out << x_hat[i] << "\t" << zeta_init[i] << "\t" 
+                << zeta_intermediate[i] << "\t" << zeta_final[i] << endl;
+  }
+  HS_prof_out.close();
 }
 
