@@ -302,7 +302,7 @@ list<LSDCRNParticle> update_CRN_list_eros_limit_3CRN(list<LSDCRNParticle>& CRN_l
 	list<LSDCRNParticle>::iterator part_iter;
 	list<LSDCRNParticle>::iterator remove_iter;
 
-	eff_eros_rate = rho_r*0.1*(zeta_new-zeta_old)/dt;
+	eff_eros_rate = rho_r*0.1*(zeta_old-zeta_new)/dt;
 	//cout << "Line 306 effective erosion rate is: " << eff_eros_rate << endl;
 
 	// first go through and update the CRN concentrations
