@@ -28,7 +28,7 @@ def Plot_app_D():
   rcParams['font.size'] = label_size  
 
   
-  for FileName in glob("*.CRNpdata"): # assigns a number to each iteration (i.e. for every .tree file in the directory)
+  for FileName in glob("*.CRNpdata_v3"): # assigns a number to each iteration (i.e. for every .tree file in the directory)
   #if label_size == 20:
     #FileName = "CRN_oneD_hs.0_0_1.CRNpdata"
     print "fname: "+FileName
@@ -48,7 +48,7 @@ def Plot_app_D():
     split_fname = FileName.split('.')    
     no_tree_levs = len(split_fname)
     fnumbers = split_fname[no_tree_levs-2]
-    figfiletitle = "Plot_appD_vs_that" + fnumbers + ".eps"
+    figfiletitle = "Plot_appD_vs_that_v2" + fnumbers + ".eps"
     print "figtitle is: "  + figfiletitle
     
     title = "E: " + erate + " $m$ $yr^{-1}$, initial D: " + start_D + " $m^2$ $yr^{-1}$, D ratio: "+D_ratio
