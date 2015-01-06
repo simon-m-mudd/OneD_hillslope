@@ -164,7 +164,7 @@ def read_Es_Rs_data():
   
   pp.tight_layout()
         
-  pp.savefig('Perturbation_EsRs.eps', format='eps')
+  pp.savefig('Perturbation_EsRs.png', format='png')
   
 if __name__ == "__main__":
     read_Es_Rs_data()  
