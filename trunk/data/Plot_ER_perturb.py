@@ -25,6 +25,12 @@ def read_Es_Rs_data():
   #rcParams['font.sans-serif'] = ['arial']
   rcParams['font.size'] = label_size  
   
+  
+  # get the initial erosion rate
+  # set these to zero. There are four initial rates
+  initial_erosion = np.zeros(4)
+  
+  # read the data from the first file
   f1 = open('test_params_data1.data', 'r')
   header1 = f1.readline()
   maxerr1 = []
@@ -35,6 +41,7 @@ def read_Es_Rs_data():
   for line in f1:
     line = line.strip()
     columns = line.split()
+    initial_erosion[0] = float(columns[0])
     logr1.append( float(columns[2]) )   
     ratio1.append (float(columns[1]) )
     maxerr1.append( float(columns[4]) )
@@ -58,6 +65,7 @@ def read_Es_Rs_data():
   for line in f2:
     line = line.strip()
     columns = line.split()
+    initial_erosion[1] = float(columns[0])
     logr2.append( float(columns[2]) )   
     ratio2.append (float(columns[1]) )
     maxerr2.append( float(columns[4]) )
@@ -81,6 +89,7 @@ def read_Es_Rs_data():
   for line in f3:
     line = line.strip()
     columns = line.split()
+    initial_erosion[2] = float(columns[0])
     logr3.append( float(columns[2]) )   
     ratio3.append (float(columns[1]) )
     maxerr3.append( float(columns[4]) )
@@ -102,6 +111,7 @@ def read_Es_Rs_data():
   for line in f4:
     line = line.strip()
     columns = line.split()
+    initial_erosion[3] = float(columns[0])
     logr4.append( float(columns[2]) )   
     ratio4.append (float(columns[1]) )
     maxerr4.append( float(columns[4]) )
@@ -114,13 +124,20 @@ def read_Es_Rs_data():
   tm4 = np.asarray(tmax4)   
 
   
+  # now get the labels
+  label1 = str(initial_erosion[0])
+  label2 = str(initial_erosion[1])
+  label3 = str(initial_erosion[2])
+  label4 = str(initial_erosion[3])
+  
   fig = pp.figure(1, facecolor='white',figsize=(10,7.5))
   ax1 = fig.add_subplot(2,1,1)
-  ax1.semilogx(r1,me1,linewidth=3)
-  ax1.semilogx(r2,me2,linewidth=3)
-  ax1.semilogx(r3,me3,linewidth=3)
-  ax1.semilogx(r4,me4,linewidth=3)
+  ax1.semilogx(r1,me1,linewidth=3, label = label1)
+  ax1.semilogx(r2,me2,linewidth=3, label = label2)
+  ax1.semilogx(r3,me3,linewidth=3, label = label3)
+  ax1.semilogx(r4,me4,linewidth=3, label = label4)
   #,r2,me2,linewidth=3,r3,me3,linewidth=3,r4,me4,linewidth=3
+  ax1.legend()
 
   ax1.spines['top'].set_linewidth(2.5)
   ax1.spines['left'].set_linewidth(2.5)
