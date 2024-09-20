@@ -7,7 +7,9 @@ CFLAGS= -c -Wall -O3 -std=c++11 -fPIC
 OFLAGS = -Wall -O3 -std=c++11 -fPIC
 LDFLAGS= -Wall -fPIC
 SOURCES = uplift_pulse.cpp \
-		  OneDImplicitHillslope.cpp 
+		  OneDImplicitHillslope.cpp \
+          LSDStatsTools.cpp \
+          LSDParameterParser.cpp
 OBJ = $(SOURCES:.cpp=.o)
 #LIBS = -g -O0 -D_GLIBCXX_DEBUG
 LIBS = -Wwrite-strings
