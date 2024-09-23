@@ -95,7 +95,26 @@ int main (int nNumberofArgs,char *argv[])
 
   float_default_map["end_estar"] = 10.0;
   help_map["end_estar"] = {  "float","10.0","Ending E* value.","Does what is says on the tin."};
+
+  float_default_map["end_tstar"] = 0.5;
+  help_map["end_tstar"] = {  "float","0.5","End of simulation in T* units. T* scales by response time to hillslope is mostly adjusted by 1","Complete adjustment is around 3 T* but mostly adjusted by 1 T*"};
   
+
+  float_default_map["dimensionless_print_profile_interval"] = 0.05;
+  help_map["dimensionless_print_profile_interval"] = {  "float","0.05","Interval at which the profile prints in T* units. T* scales by response time to hillslope is mostly adjusted by 1","The program solves a variable timestep so the time of printing may not be exactly this number"};
+  
+  float_default_map["dimensionless_print_timeseries_interval"] = 0.005;
+  help_map["dimensionless_print_timeseries_interval"] = {  "float","0.005","Interval at which the timeseries prints in T* units. T* scales by response time to hillslope is mostly adjusted by 1","The program solves a variable timestep so the time of printing may not be exactly this number"};
+  
+  float_default_map["L_H"] = 100.0;
+  help_map["L_H"] = {  "float","10.0","Hillslope length in.","For dimensionalising results."};
+
+  float_default_map["S_c"] = 0.75;
+  help_map["S_c"] = {  "float","0.75","Critical slope. Unitless.","For dimensionalising results."};
+
+  float_default_map["D"] = 0.001;
+  help_map["D"] = {  "float","0.001","Diffusion coeffient in m^2/yr.","For dimensionalising results."};
+
   //=========================================================================
   //
   //.#####....####...#####....####...##...##..######..######..######..#####..
@@ -122,8 +141,8 @@ int main (int nNumberofArgs,char *argv[])
   {
     cout << "I am going to print the help and exit." << endl;
     cout << "You can find the help in the file:" << endl;
-    cout << "./lsdtt-basic-metrics-README.csv" << endl;
-    string help_prefix = "lsdtt-basic-metrics-README";
+    cout << "./oned-hillslope-README.csv" << endl;
+    string help_prefix = "oned-hillslope-README";
     LSDPP.print_help(help_map, help_prefix, version_number, citation);
     exit(0);
   }
@@ -135,43 +154,60 @@ int main (int nNumberofArgs,char *argv[])
   // create a hillslope
   OneDImplicitHillslope thisHillslope;
 
+  // some parameter that at the moment we are not changing  
+  double dt_hat = 0.0005;  // this gives a reasonable starting point for iterations
+  double t_ime_hat = 0;   // we always start at time 0
+  double tolerance = 0.00001; // this sets convergence of model
+
+  // user defined parameters
   double start_estar = this_float_map["start_estar"];
   double end_estar = this_float_map["end_estar"];
+  double end_time_hat = double(float_default_map["end_tstar"]);
+  double timeseries_print_spacing = double(float_default_map["dimensionless_print_timeseries_interval"]);
+  double profile_print_spacing =  double(float_default_map["dimensionless_print_profile_interval"]);
+  double next_timeseries_print = timeseries_print_spacing;
+  double next_profile_print = profile_print_spacing;
 
 
-  // set to steady state
+  // set the hillslope to steady state
   thisHillslope.set_analytical_steady(start_estar);
 
 
-  string uscore = "_";
-  string data_ext = ".EsRsdata";
-  string this_outfile = "yoyoma"+data_ext;
-  cout << "Now doing timeseries, filename is: " << this_outfile << endl;
+  // set up outfiles
+  string timeseries_outfile = "timeseries.csv";
+  string profile_outfile = "profile.csv";
+  cout << "Now doing timeseries and profile, filenames are: " << timeseries_outfile << " and " << profile_outfile << endl;
     
   ofstream EsRs_transient_out;
-  EsRs_transient_out.open(this_outfile.c_str());
+  EsRs_transient_out.open(timeseries_outfile.c_str());
 
-  // now run for 3 relaxation times
-  double dt_hat = 0.0005;
-  double t_ime_hat = 0;
-  double end_time_hat = 0.5;
-  double tolerance = 0.00001;
-  double print_spacing = 0.005;
-  double next_print = print_spacing;
+  ofstream profile_transient_out;
+  profile_transient_out.open(profile_outfile.c_str());
+
+  EsRs_transient_out << "t_hat,E*,R*,analytical_R*" << endl;
+
+
+
   cout << "Starting hillslope loop" << endl;
   while (t_ime_hat < end_time_hat)
   {
     thisHillslope.hillslope_timestep(dt_hat, t_ime_hat, end_estar, tolerance);
     
-    if(t_ime_hat >= next_print)
+    if(t_ime_hat >= next_timeseries_print)
     {
-    //cout << "Printing to file, time is: " << t_ime_hat << " and end time: " << end_time_hat << endl;
-    double this_E_star = thisHillslope.calculate_E_star();
-    EsRs_transient_out << t_ime_hat << "\t"
-                        << thisHillslope.calculate_E_star() << "\t" 
-                        << thisHillslope.calculate_R_star() << "\t"
-                        << thisHillslope.analytical_R_star(this_E_star) << endl;
-    next_print += print_spacing;                  
+      //cout << "Printing to file, time is: " << t_ime_hat << " and end time: " << end_time_hat << endl;
+      double this_E_star = thisHillslope.calculate_E_star();
+      EsRs_transient_out << t_ime_hat << "\t"
+                          << thisHillslope.calculate_E_star() << "\t" 
+                          << thisHillslope.calculate_R_star() << "\t"
+                          << thisHillslope.analytical_R_star(this_E_star) << endl;
+      next_timeseries_print += timeseries_print_spacing;                  
+    }
+
+    if(t_ime_hat >= next_profile_print)
+    {
+      cout << "Printing your profile, the time is: " << t_ime_hat << " and end time: " << end_time_hat << endl;
+      next_timeseries_print += timeseries_print_spacing; 
     }
 
   }
