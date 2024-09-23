@@ -21,6 +21,7 @@ class OneDImplicitHillslope
 {
 	public:
 		OneDImplicitHillslope()				{ create(); }
+		OneDImplicitHillslope(double dx_hat)				{ create(dx_hat); }
 		OneDImplicitHillslope(double tp_temp,double Up_temp,double Uw_temp)
 											{ create(tp_temp, Up_temp, Uw_temp); }
 		OneDImplicitHillslope(double tp_temp,double Up_temp,double Uw_temp, double dx)
@@ -223,6 +224,7 @@ class OneDImplicitHillslope
 
 	private:
 		void create();
+		void create(double dx_hat);
 		void create(double tp_temp,double Up_temp,double Uw_temp);
 		void create(double tp_temp,double Up_temp,double Uw_temp, double dx);
 		void create(int tn_nodes, int tridgetop_node, double tt_hat_peak, double tU_hat_peak,
@@ -230,8 +232,8 @@ class OneDImplicitHillslope
 					Array1D<double> tzeta_intermediate, Array1D<double> tf, Array2D<double> tCoeff_matrix,
 					vector<double> tx_hat,vector<double> tA_hat_denom, vector<double> tB_hat_denom,
 					vector<double> tA_slope_denom2, vector<double> tB_slope_denom2, 
-          double tD, double tS_c, double tL_H, vector<double> tx, 
-          vector<double> tzeta_dimen,vector<double> tzeta_lts_dimen, double rho_ratio);
+          			double tD, double tS_c, double tL_H, vector<double> tx, 
+          			vector<double> tzeta_dimen,vector<double> tzeta_lts_dimen, double rho_ratio);
 };
 
 #endif

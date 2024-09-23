@@ -44,6 +44,19 @@ void OneDImplicitHillslope::create()
 	create(tp_temp,Up_temp,Uw_temp, dx);
 }
 
+
+// this creates an object with default values apart from the x spacing
+// there are finer spacings near the divide. 
+void OneDImplicitHillslope::create(double dx_hat)
+{
+	double tp_temp = 1.0;
+	double Up_temp = 1.0;
+	double Uw_temp = 1.0;
+	double dx = dx_hat;
+	create(tp_temp,Up_temp,Uw_temp, dx);
+}
+
+
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function initializes the hillslope
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -991,9 +1004,9 @@ string OneDImplicitHillslope::print_comma_delimited_xhat_string()
 	string x_hat_str;
 	for(int i = 0; i<n_nodes-1; i++)
 	{
-		x_hat_str = dtoa(x_hat[i])+",";
+		x_hat_str += dtoa(x_hat[i])+",";
 	}	
-	x_hat_str= dtoa(x_hat[n_nodes-1]);
+	x_hat_str+= dtoa(x_hat[n_nodes-1]);
 	return x_hat_str;
 }
 
@@ -1002,9 +1015,9 @@ string OneDImplicitHillslope::print_comma_delimited_x_string()
 	string x_str;
 	for(int i = 0; i<n_nodes-1; i++)
 	{
-		x_str = dtoa(x_hat[i]/L_H)+",";
+		x_str += dtoa(x_hat[i]/L_H)+",";
 	}	
-	x_str= dtoa(x_hat[n_nodes-1]/L_H);
+	x_str+= dtoa(x_hat[n_nodes-1]/L_H);
 	return x_str;
 }
 
@@ -1013,9 +1026,9 @@ string OneDImplicitHillslope::print_comma_delimited_zetahat_string()
 	string zeta_hat_str;
 	for(int i = 0; i<n_nodes-1; i++)
 	{
-		zeta_hat_str = dtoa(zeta_hat[i])+",";
+		zeta_hat_str += dtoa(zeta_hat[i])+",";
 	}	
-	zeta_hat_str= dtoa(zeta_hat[n_nodes-1]);
+	zeta_hat_str+= dtoa(zeta_hat[n_nodes-1]);
 	return zeta_hat_str;
 }
 
@@ -1024,9 +1037,9 @@ string OneDImplicitHillslope::print_comma_delimited_zeta_string()
 	string zeta_str;
 	for(int i = 0; i<n_nodes-1; i++)
 	{
-		zeta_str = dtoa(zeta_hat[i]*S_c*L_H)+",";
+		zeta_str += dtoa(zeta_hat[i]*S_c*L_H)+",";
 	}	
-	zeta_str= dtoa(zeta_hat[n_nodes-1]*S_c*L_H);
+	zeta_str+= dtoa(zeta_hat[n_nodes-1]*S_c*L_H);
 	return zeta_str;
 }
 

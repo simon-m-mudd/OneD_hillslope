@@ -90,15 +90,17 @@ int main (int nNumberofArgs,char *argv[])
   // .##......##..##..##..##..##..##..##...##..######....##....######..##..##...####..
   //
   //=================================================================================
-  float_default_map["start_estar"] = 0.2;
+  float_default_map["start_estar"] = 0.5;
   help_map["start_estar"] = { "float","0.2","Starting E* value.","Does what is says on the tin."};
 
-  float_default_map["end_estar"] = 10.0;
+  float_default_map["end_estar"] = 2.0;
   help_map["end_estar"] = {  "float","10.0","Ending E* value.","Does what is says on the tin."};
 
   float_default_map["end_tstar"] = 0.5;
   help_map["end_tstar"] = {  "float","0.5","End of simulation in T* units. T* scales by response time to hillslope is mostly adjusted by 1","Complete adjustment is around 3 T* but mostly adjusted by 1 T*"};
-  
+
+  float_default_map["dx_hat"] = 0.1;
+  help_map["dx_hat"] = {  "float","0.1","Spacing of nodes in dimensionless x","Note spacing is closer near the divide."};  
 
   float_default_map["dimensionless_print_profile_interval"] = 0.05;
   help_map["dimensionless_print_profile_interval"] = {  "float","0.05","Interval at which the profile prints in T* units. T* scales by response time to hillslope is mostly adjusted by 1","The program solves a variable timestep so the time of printing may not be exactly this number"};
@@ -155,7 +157,8 @@ int main (int nNumberofArgs,char *argv[])
   LSDPP.print_parameters();
 
   // create a hillslope
-  OneDImplicitHillslope thisHillslope;
+  double dx_hat = 0.05;
+  OneDImplicitHillslope thisHillslope(dx_hat);
 
   // some parameter that at the moment we are not changing  
   double dt_hat = 0.0005;  // this gives a reasonable starting point for iterations
@@ -195,6 +198,15 @@ int main (int nNumberofArgs,char *argv[])
 
   EsRs_transient_out << "t_hat,E*,R*,analytical_R*" << endl;
 
+  // get the x location string
+  string x_string = thisHillslope.print_comma_delimited_xhat_string();
+
+
+  // printing for the profile
+  profile_transient_out << "t_hat,"+x_string << endl;
+  // print the initial condition
+  string zeta_hat_str = thisHillslope.print_comma_delimited_zetahat_string();
+  profile_transient_out << "0," << zeta_hat_str << endl;
 
 
   cout << "Starting hillslope loop" << endl;
@@ -206,9 +218,9 @@ int main (int nNumberofArgs,char *argv[])
     {
       //cout << "Printing to file, time is: " << t_ime_hat << " and end time: " << end_time_hat << endl;
       double this_E_star = thisHillslope.calculate_E_star();
-      EsRs_transient_out << t_ime_hat << "\t"
-                          << thisHillslope.calculate_E_star() << "\t" 
-                          << thisHillslope.calculate_R_star() << "\t"
+      EsRs_transient_out << t_ime_hat << ","
+                          << thisHillslope.calculate_E_star() << "," 
+                          << thisHillslope.calculate_R_star() << ","
                           << thisHillslope.analytical_R_star(this_E_star) << endl;
       next_timeseries_print += timeseries_print_spacing;                  
     }
@@ -216,7 +228,9 @@ int main (int nNumberofArgs,char *argv[])
     if(t_ime_hat >= next_profile_print)
     {
       cout << "Printing your profile, the time is: " << t_ime_hat << " and end time: " << end_time_hat << endl;
-      next_timeseries_print += timeseries_print_spacing; 
+      string zeta_hat_str = thisHillslope.print_comma_delimited_zetahat_string();
+      profile_transient_out << t_ime_hat << "," << zeta_hat_str << endl;
+      next_profile_print += profile_print_spacing; 
     }
 
   }
