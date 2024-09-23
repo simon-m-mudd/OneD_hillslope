@@ -9,6 +9,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <vector>
+#include "LSDStatsTools.hpp"
 #include "TNT/tnt.h"
 using namespace std;
 using namespace TNT;
@@ -36,73 +37,79 @@ class OneDImplicitHillslope
 								tx_hat, tA_hat_denom, tB_hat_denom, tA_slope_denom2,tB_slope_denom2, 
                 tD, tS_c, tL_H, tx, tzeta_dimen, tzeta_lts_dimen, trho_ratio); }
 
-    // set the dimensional parameters
-    void set_D(double new_D)  { D = new_D; }
-    void set_S_c(double new_S_c) {S_c = new_S_c; }
-    void set_L_H(double new_L_H);
-    void set_rho_ratio(double new_rho_ratio) {rho_ratio = new_rho_ratio; }
-    
-    // this just dimensionalises zeta_hat and populates zeta_dimen and zeta_lts_dimen
-    // with the resulting vectors
-    void populate_dimensional_zeta();
+		// set the dimensional parameters
+    	void set_D(double new_D)  { D = new_D; }
+		void set_S_c(double new_S_c) {S_c = new_S_c; }
+		void set_L_H(double new_L_H);
+		void set_rho_ratio(double new_rho_ratio) {rho_ratio = new_rho_ratio; }
+		
+		// this just dimensionalises zeta_hat and populates zeta_dimen and zeta_lts_dimen
+		// with the resulting vectors
+		void populate_dimensional_zeta();
 
-    // check if the dimensional parameters have been set
-    bool check_if_dimensional_parameters_set();
-    
-    // some tools for moving between dimensional and nondimensional space
-    double dimensional_time_from_that(double dt_hat); 
-    double dimensional_uplift_from_Uhat(double U_hat);
-    vector<double> dimensional_zeta_from_zeta_hat();
-    double U_hat_from_dimensional_U(double U);
-       
-    // this runs a hillslope timestep in dimensional and wraps it in dimensional
-    // space
-    // returns dimensional dt
-    double run_dimensional_hillslope_timestep(double& dt_hat, double& t_hat_ime,
-                                   double & t_ime, double uplift, double tolerance);
+		// check if the dimensional parameters have been set
+		bool check_if_dimensional_parameters_set();
+		
+		// some tools for moving between dimensional and nondimensional space
+		double dimensional_time_from_that(double dt_hat); 
+		double dimensional_uplift_from_Uhat(double U_hat);
+		vector<double> dimensional_zeta_from_zeta_hat();
+		double U_hat_from_dimensional_U(double U);
+		
+		// this runs a hillslope timestep in dimensional and wraps it in dimensional
+		// space
+		// returns dimensional dt
+		double run_dimensional_hillslope_timestep(double& dt_hat, double& t_hat_ime,
+									double & t_ime, double uplift, double tolerance);
 
-    // calcualtes curvature in deimensional space
-    double calculate_dimensional_ridgetop_curvature();
+		// calcualtes curvature in deimensional space
+		double calculate_dimensional_ridgetop_curvature();
 
-    // this calculates change in zeta at the ridgetop. Only works if zeta
-    // has been initialised
-    double get_dz_ridgetop();
-    
-    // this gets the current dimensional zeta at the ridgetop
-    double get_current_ridgetop_dimensional_zeta();
+		// this calculates change in zeta at the ridgetop. Only works if zeta
+		// has been initialised
+		double get_dz_ridgetop();
+		
+		// this gets the current dimensional zeta at the ridgetop
+		double get_current_ridgetop_dimensional_zeta();
 
 		// reset hillslope to a new flat surface using the same spatial discritization
 		void reset_hillslope(double tp_temp, double Up_temp, double Uw_temp);
 
 		// this takes a time vector and calculates the E* and R* along this time series
 		void run_based_on_data_spacing(vector<double> t_hat_data, vector<double>& E_star_modelled,
-							 vector<double>& R_star_modelled, double tolerance);
+								vector<double>& R_star_modelled, double tolerance);
 		void advance_to_next_time_interval_gaussian_uplift(double& dt_hat, double& t_ime,
-		                                            double target_time, double tolerance);
-													// this advnaces the model to some
-													// set time
-		
-    void hillslope_timestep(double& dt_hat, double& t_ime, double U_hat,double tolerance);
-													// this does a single timestep in the
-													// evolution of the hillslope
-													// returns a new timestep and the new t_ime
-		
-    void hillslope_timestep_gaussian_uplift(double& dt_hat, double& t_ime, double tolerance);
-													// this does a single timestep but solves the
-													// governing equations using U_hat at
-													// the future timestep determined from a
-													// gaussian function
-		
-    int hillslope_iterator(double dt_hat, double U_hat, double tolerance);
-													// this adjusts the timestep
-		
-    void solve_for_zeta_intermediate(double dt_hat, double U_hat);
-													// this solves a timestep, replacing the
-													// data array zeta_intermediate with
-													// a solved zeta
+														double target_time, double tolerance);
+														// this advanaces the model to some
+														// set time
+			
+		void hillslope_timestep(double& dt_hat, double& t_ime, double U_hat,double tolerance);
+														// this does a single timestep in the
+														// evolution of the hillslope
+														// returns a new timestep and the new t_ime
+			
+		void hillslope_timestep_gaussian_uplift(double& dt_hat, double& t_ime, double tolerance);
+														// this does a single timestep but solves the
+														// governing equations using U_hat at
+														// the future timestep determined from a
+														// gaussian function
+			
+		int hillslope_iterator(double dt_hat, double U_hat, double tolerance);
+														// this adjusts the timestep
+			
+		void solve_for_zeta_intermediate(double dt_hat, double U_hat);
+														// this solves a timestep, replacing the
+														// data array zeta_intermediate with
+														// a solved zeta
 
 		double get_zeta_rootsquare_error();			// gets the root of the square of error
 													// between zeta nad zeta intermediate
+
+		// Some functions for printing profile information
+		string print_comma_delimited_xhat_string();
+		string print_comma_delimited_x_string();
+		string print_comma_delimited_zetahat_string();
+		string print_comma_delimited_zeta_string();
 
 		// accessor functions (used for = operator)
 		int get_n_nodes() const						{return n_nodes;}
@@ -130,11 +137,11 @@ class OneDImplicitHillslope
 		vector<double> get_A_slope_denom2() const	{ return A_slope_denom2; }
 		vector<double> get_B_slope_denom2() const	{ return B_slope_denom2; }
 		double get_D() const  { return D; }
-    double get_S_c() const { return S_c; }
-    double get_L_H() const { return L_H; }
-    vector<double> get_x() const { return x; }
-    vector<double> get_zeta_dimen() const { return zeta_dimen; }
-    vector<double> get_zeta_lts_dimen() const { return zeta_lts_dimen; }
+		double get_S_c() const { return S_c; }
+		double get_L_H() const { return L_H; }
+		vector<double> get_x() const { return x; }
+		vector<double> get_zeta_dimen() const { return zeta_dimen; }
+		vector<double> get_zeta_lts_dimen() const { return zeta_lts_dimen; }
 
 		// functions for getting the anayltical solutions to the governing equations
 		// these are used to test the numerical method
@@ -158,22 +165,22 @@ class OneDImplicitHillslope
 
 		OneDImplicitHillslope& operator=(const OneDImplicitHillslope& ODHS);
 
-    // sets zeta to be the analytical solution for U_hat
-    void set_analytical_steady(double U_hat);
+		// sets zeta to be the analytical solution for U_hat
+		void set_analytical_steady(double U_hat);
 
-  //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  //
-  // Max_Rstar_err_after_step_change
-  // This tests to see what the maximum difference between predicted and measured 
-  // R_star will be given a pulse of uplift
-  //
-  // returns a vector for holding the data
-  // the first element is the maximum error in Rstar, 
-  // the second element is the Estar where this occurs
-  // the third element is the time after perturbation when the max occurs
-  //
-  //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  vector<double> Max_Rstart_err_after_step_change(double Uhat_start, double Uhat_end);
+		//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+		//
+		// Max_Rstar_err_after_step_change
+		// This tests to see what the maximum difference between predicted and measured 
+		// R_star will be given a pulse of uplift
+		//
+		// returns a vector for holding the data
+		// the first element is the maximum error in Rstar, 
+		// the second element is the Estar where this occurs
+		// the third element is the time after perturbation when the max occurs
+		//
+		//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+		vector<double> Max_Rstart_err_after_step_change(double Uhat_start, double Uhat_end);
 
 
 	protected:

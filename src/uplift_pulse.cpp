@@ -115,6 +115,9 @@ int main (int nNumberofArgs,char *argv[])
   float_default_map["D"] = 0.001;
   help_map["D"] = {  "float","0.001","Diffusion coeffient in m^2/yr.","For dimensionalising results."};
 
+  float_default_map["rho_ratio"] = 2.0;
+  help_map["rho_ratio"] = {  "float","2","Ratio between the bedrock and soil density","For dimensionalising results."};
+
   //=========================================================================
   //
   //.#####....####...#####....####...##...##..######..######..######..#####..
@@ -171,6 +174,12 @@ int main (int nNumberofArgs,char *argv[])
 
   // set the hillslope to steady state
   thisHillslope.set_analytical_steady(start_estar);
+
+  // set the dimensional values
+  thisHillslope.set_D(double(this_float_map["D"]));
+  thisHillslope.set_S_c(double(this_float_map["S_c"]));
+  thisHillslope.set_L_H(double(this_float_map["L_H"]));
+  thisHillslope.set_rho_ratio(double(this_float_map["rho_ratio"]));
 
 
   // set up outfiles

@@ -982,6 +982,56 @@ void OneDImplicitHillslope::print_analytical_SS(double U_star)
 }
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// some profile printing tools
+//=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+string OneDImplicitHillslope::print_comma_delimited_xhat_string()
+{
+	string x_hat_str;
+	for(int i = 0; i<n_nodes-1; i++)
+	{
+		x_hat_str = dtoa(x_hat[i])+",";
+	}	
+	x_hat_str= dtoa(x_hat[n_nodes-1]);
+	return x_hat_str;
+}
+
+string OneDImplicitHillslope::print_comma_delimited_x_string()
+{
+	string x_str;
+	for(int i = 0; i<n_nodes-1; i++)
+	{
+		x_str = dtoa(x_hat[i]/L_H)+",";
+	}	
+	x_str= dtoa(x_hat[n_nodes-1]/L_H);
+	return x_str;
+}
+
+string OneDImplicitHillslope::print_comma_delimited_zetahat_string()
+{
+	string zeta_hat_str;
+	for(int i = 0; i<n_nodes-1; i++)
+	{
+		zeta_hat_str = dtoa(zeta_hat[i])+",";
+	}	
+	zeta_hat_str= dtoa(zeta_hat[n_nodes-1]);
+	return zeta_hat_str;
+}
+
+string OneDImplicitHillslope::print_comma_delimited_zeta_string()
+{
+	string zeta_str;
+	for(int i = 0; i<n_nodes-1; i++)
+	{
+		zeta_str = dtoa(zeta_hat[i]*S_c*L_H)+",";
+	}	
+	zeta_str= dtoa(zeta_hat[n_nodes-1]*S_c*L_H);
+	return zeta_str;
+}
+
+
+
 //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // this function is simply used to test the steady solution
 // it returns the root square of the maximum error between zeta_star modelled
