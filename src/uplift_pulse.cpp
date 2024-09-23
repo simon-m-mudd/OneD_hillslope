@@ -235,6 +235,9 @@ int main (int nNumberofArgs,char *argv[])
 
   }
 
+  EsRs_transient_out.close();
+  profile_transient_out.close();
+
 
 }
 
